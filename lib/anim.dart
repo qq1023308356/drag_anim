@@ -1,9 +1,9 @@
-import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 
+import 'drag_anim_notification.dart';
 
 class DragAnimWidget extends ImplicitlyAnimatedWidget {
   const DragAnimWidget({
@@ -141,7 +141,7 @@ class _AnimRenderObject extends RenderShiftedBox {
         final EdgeInsets geometry = renderAnimManage.tweenOffset!.evaluate(renderAnimManage.animation) as EdgeInsets;
         context.paintChild(child!, Offset(geometry.left, geometry.top));
         if (renderAnimManage.currentOffset!.left != position.dx || renderAnimManage.currentOffset!.top != position.dy) {
-          //print("执行中再次改变动画 ${renderAnimManage.currentOffset}  $position");
+          //log("执行中再次改变动画 ${renderAnimManage.currentOffset}  $position");
           setStart(geometry, EdgeInsets.only(left: position.dx, top: position.dy));
         }
         renderAnimManage.currentOffset = EdgeInsets.only(left: position.dx, top: position.dy);
@@ -150,14 +150,14 @@ class _AnimRenderObject extends RenderShiftedBox {
             renderAnimManage.currentOffset != null &&
             (renderAnimManage.currentOffset!.left != position.dx ||
                 renderAnimManage.currentOffset!.top != position.dy)) {
-          //print("开始 ${renderAnimManage.currentOffset}  $position");
+          //log("开始 ${renderAnimManage.currentOffset}  $position");
           context.paintChild(child!, Offset(renderAnimManage.currentOffset!.left, renderAnimManage.currentOffset!.top));
           setStart(renderAnimManage.currentOffset, EdgeInsets.only(left: position.dx, top: position.dy));
           renderAnimManage.currentOffset = EdgeInsets.only(left: position.dx, top: position.dy);
         } else {
           renderAnimManage.currentOffset = EdgeInsets.only(left: position.dx, top: position.dy);
 
-          //print("正常 $position");
+          //log("正常 $position");
           context.paintChild(child!, position);
         }
       }
@@ -171,46 +171,4 @@ class RenderAnimManage {
   EdgeInsets? currentOffset;
   late AnimationController controller;
   late Animation<double> animation;
-}
-
-class DragAnimNotification extends StatefulWidget {
-  const DragAnimNotification({required this.child, Key? key}) : super(key: key);
-  final Widget child;
-  static bool isScroll = false;
-
-  @override
-  State<StatefulWidget> createState() => DragAnimNotificationState();
-}
-
-class DragAnimNotificationState extends State<DragAnimNotification> {
-  Timer? _timer;
-
-  void setScroll() {
-    _timer?.cancel();
-    _timer = Timer(const Duration(milliseconds: 100), () {
-      DragAnimNotification.isScroll = false;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return NotificationListener<ScrollNotification>(
-      onNotification: (ScrollNotification notification) {
-        if (notification is ScrollStartNotification) {
-          _timer?.cancel();
-          DragAnimNotification.isScroll = true;
-        } else if (notification is ScrollEndNotification) {
-          setScroll();
-        }
-        return false;
-      },
-      child: widget.child,
-    );
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
-  }
 }

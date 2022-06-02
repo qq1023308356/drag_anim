@@ -5,6 +5,8 @@ import 'package:drag_anim/anim.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
+import 'drag_anim_notification.dart';
+
 typedef DragItems = Widget Function(Widget child);
 typedef DragTargetOn<T> = Widget Function(T? moveData, T data);
 
@@ -235,7 +237,7 @@ class _DragAnimState<T extends Object> extends State<DragAnim<T>> {
     final double scrollEnd = scrollStart + _sizeExtent(scrollRenderBox.size, widget.scrollDirection);
     final double currentOffset = _offsetExtent(details, widget.scrollDirection);
     final double mediaQuery = _sizeExtent(MediaQuery.of(context).size, widget.scrollDirection) * 0.1;
-    //print('1111111111  ${currentOffset}  ${scrollStart}  ${scrollEnd}  ${scrollOrigin}');
+    //log('数据  ${currentOffset}  ${scrollStart}  ${scrollEnd}  ${scrollOrigin}');
     if (currentOffset < (scrollStart + mediaQuery)) {
       animateTo(mediaQuery, isNext: false);
     } else if (currentOffset > (scrollEnd - mediaQuery)) {
