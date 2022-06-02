@@ -59,4 +59,4 @@ dependencies:
 ![Staired example][aligned_example]
 
 <!-- Links -->
-[aligned_example]: https://raw.githubusercontent.com/qq1023308356/drag_anim/main/docs/images/123.mp4
+[aligned_example]: https://raw.githubusercontent.com/qq1023308356/drag_anim/main/docs/images/123.gif
