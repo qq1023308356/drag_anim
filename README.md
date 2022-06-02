@@ -1,11 +1,16 @@
-#### drag_anim
-# 自动检测位置变化进行位移动画
+# drag_anim
+## 自动检测位置变化进行位移动画
+## 如果滑动组件在buildItems下则可以嵌套DragAnimNotification也可以设置isDragAnimNotification = true
+## DragAnim 不是滑动组件的子widget的时候需要传scrollController，不然无法到边缘自动滚动
+
 
 ```yaml
 dependencies:
   ...
   drag_anim: <latest_version>
 ```
+
+![Staired example][aligned_example]
 
 ```dart
   @override
@@ -55,8 +60,6 @@ dependencies:
     );
   }
 ```
-
-![Staired example][aligned_example]
 
 <!-- Links -->
 [aligned_example]: https://raw.githubusercontent.com/qq1023308356/drag_anim/main/docs/images/123.gif
