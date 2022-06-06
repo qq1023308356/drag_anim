@@ -127,7 +127,7 @@ class _DragAnimState<T extends Object> extends State<DragAnim<T>> {
                             ? null
                             : (T moveData) => widget.onAccept?.call(moveData, data, true),
                         onLeave:
-                        widget.onLeave == null ? null : (T? moveData) => widget.onLeave?.call(moveData, data, true),
+                            widget.onLeave == null ? null : (T? moveData) => widget.onLeave?.call(moveData, data, true),
                         onMove: widget.onMove == null
                             ? null
                             : (DragTargetDetails<T> details) => widget.onMove?.call(data, details, true),
@@ -270,7 +270,7 @@ class _DragAnimState<T extends Object> extends State<DragAnim<T>> {
     final double scrollEnd = scrollStart + _sizeExtent(scrollRenderBox.size, widget.scrollDirection);
     final double currentOffset = _offsetExtent(details, widget.scrollDirection);
     final double mediaQuery = _sizeExtent(MediaQuery.of(context).size, widget.scrollDirection) * 0.1;
-    //print('1111111111  ${currentOffset}  ${scrollStart}  ${scrollEnd}  ${scrollOrigin}');
+    //print('当前位置  ${currentOffset}  ${scrollStart}  ${scrollEnd}  ${scrollOrigin}');
     if (currentOffset < (scrollStart + mediaQuery)) {
       animateTo(mediaQuery, isNext: false);
     } else if (currentOffset > (scrollEnd - mediaQuery)) {
@@ -295,6 +295,7 @@ class _DragAnimState<T extends Object> extends State<DragAnim<T>> {
       } else if (!isNext && position.pixels <= position.minScrollExtent) {
         endAnimation();
       } else {
+        _timer?.cancel();
         position.animateTo(
           position.pixels + (isNext ? mediaQuery : -mediaQuery),
           duration: const Duration(milliseconds: 200),
