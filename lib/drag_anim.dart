@@ -40,29 +40,38 @@ class DragAnim<T extends Object> extends StatefulWidget {
   final bool isLongPressDraggable;
   final Axis? axis;
   final void Function(T? moveData, T data, bool isFront)? onAccept;
-  final bool Function(T? moveData, T? data, bool isFront)? onWillAccept;
-  final void Function(T? moveData, T? data, bool isFront)? onLeave;
-  final void Function(T? data, DragTargetDetails<T> details, bool isFront)? onMove;
+  final bool Function(T? moveData, T data, bool isFront)? onWillAccept;
+  final void Function(T? moveData, T data, bool isFront)? onLeave;
+  final void Function(T data, DragTargetDetails<T> details, bool isFront)? onMove;
   final Axis scrollDirection;
   final HitTestBehavior hitTestBehavior;
-  final VoidCallback? onDragStarted;
-  final DragUpdateCallback? onDragUpdate;
-  final DraggableCanceledCallback? onDraggableCanceled;
-  final DragEndCallback? onDragEnd;
-  final VoidCallback? onDragCompleted;
+  final void Function(T data)? onDragStarted;
+  final void Function(DragUpdateDetails details, T data)? onDragUpdate;
+  final void Function(Velocity velocity, Offset offset, T data)? onDraggableCanceled;
+  final void Function(DraggableDetails details, T data)? onDragEnd;
+  final void Function(T data)? onDragCompleted;
   final ScrollController? scrollController;
   final bool isDragAnimNotification;
 
   @override
-  State<StatefulWidget> createState() => _DragAnimState<T>();
+  State<StatefulWidget> createState() => DragAnimState<T>();
 }
 
-class _DragAnimState<T extends Object> extends State<DragAnim<T>> {
+class DragAnimState<T extends Object> extends State<DragAnim<T>> {
   Timer? _timer;
   Timer? _scrollableTimer;
   ScrollableState? _scrollable;
   AnimationStatus status = AnimationStatus.completed;
   bool isDragStart = false;
+
+  void setDragStart({bool isDragStart = true}) {
+    if (this.isDragStart != isDragStart) {
+      setState(() {
+        this.isDragStart = isDragStart;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (widget.isDragAnimNotification) {
@@ -175,33 +184,26 @@ class _DragAnimState<T extends Object> extends State<DragAnim<T>> {
           axis: widget.axis,
           data: data,
           onDragStarted: () {
-            setState(() {
-              isDragStart = true;
-            });
-            widget.onDragStarted?.call();
+            setDragStart();
+            widget.onDragStarted?.call(data);
           },
           onDragUpdate: (DragUpdateDetails details) {
             _autoScrollIfNecessary(details.globalPosition, father);
-            widget.onDragStarted?.call();
+            widget.onDragUpdate?.call(details, data);
           },
           onDraggableCanceled: (Velocity velocity, Offset offset) {
-            setState(() {
-              isDragStart = false;
-            });
+            setDragStart(isDragStart: false);
             endAnimation();
-            widget.onDraggableCanceled?.call(velocity, offset);
+            widget.onDraggableCanceled?.call(velocity, offset, data);
           },
           onDragEnd: (DraggableDetails details) {
-            setState(() {
-              isDragStart = false;
-            });
+            setDragStart(isDragStart: false);
+            widget.onDragEnd?.call(details, data);
           },
           onDragCompleted: () {
-            setState(() {
-              isDragStart = false;
-            });
+            setDragStart(isDragStart: false);
             endAnimation();
-            widget.onDragCompleted?.call();
+            widget.onDragCompleted?.call(data);
           },
           child: child,
         );
@@ -211,33 +213,26 @@ class _DragAnimState<T extends Object> extends State<DragAnim<T>> {
           axis: widget.axis,
           data: data,
           onDragStarted: () {
-            setState(() {
-              isDragStart = true;
-            });
-            widget.onDragStarted?.call();
+            setDragStart();
+            widget.onDragStarted?.call(data);
           },
           onDragUpdate: (DragUpdateDetails details) {
             _autoScrollIfNecessary(details.globalPosition, father);
-            widget.onDragStarted?.call();
+            widget.onDragUpdate?.call(details, data);
           },
           onDraggableCanceled: (Velocity velocity, Offset offset) {
-            setState(() {
-              isDragStart = false;
-            });
+            setDragStart(isDragStart: false);
             endAnimation();
-            widget.onDraggableCanceled?.call(velocity, offset);
+            widget.onDraggableCanceled?.call(velocity, offset, data);
           },
           onDragEnd: (DraggableDetails details) {
-            setState(() {
-              isDragStart = false;
-            });
+            setDragStart(isDragStart: false);
+            widget.onDragEnd?.call(details, data);
           },
           onDragCompleted: () {
-            setState(() {
-              isDragStart = false;
-            });
+            setDragStart(isDragStart: false);
             endAnimation();
-            widget.onDragCompleted?.call();
+            widget.onDragCompleted?.call(data);
           },
           child: child,
         );
