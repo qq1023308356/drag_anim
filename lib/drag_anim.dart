@@ -77,6 +77,8 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
         this.isDragStart = isDragStart;
         if (!this.isDragStart) {
           dragData = null;
+        } else {
+          endWillAccept();
         }
       });
     }
@@ -146,7 +148,7 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
                             ? null
                             : (T moveData) => widget.onAccept?.call(moveData, data, true),
                         onLeave:
-                            widget.onLeave == null ? null : (T? moveData) => widget.onLeave?.call(moveData, data, true),
+                        widget.onLeave == null ? null : (T? moveData) => widget.onLeave?.call(moveData, data, true),
                         onMove: widget.onMove == null
                             ? null
                             : (DragTargetDetails<T> details) => widget.onMove?.call(data, details, true),
