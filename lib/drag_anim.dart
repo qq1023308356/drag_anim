@@ -31,6 +31,7 @@ class DragAnim<T extends Object> extends StatefulWidget {
     this.onDragCompleted,
     this.scrollController,
     this.isDragAnimNotification = false,
+    this.draggingWidgetOpacity = 0.5,
     Key? key,
   }) : super(key: key);
   final Widget Function(List<Widget> children) buildItems;
@@ -52,6 +53,7 @@ class DragAnim<T extends Object> extends StatefulWidget {
   final void Function(T data)? onDragCompleted;
   final ScrollController? scrollController;
   final bool isDragAnimNotification;
+  final double draggingWidgetOpacity;
 
   @override
   State<StatefulWidget> createState() => DragAnimState<T>();
@@ -63,6 +65,7 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
   ScrollableState? _scrollable;
   AnimationStatus status = AnimationStatus.completed;
   bool isDragStart = false;
+  T? dragData;
 
   void endWillAccept() {
     _timer?.cancel();
@@ -72,6 +75,9 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
     if (this.isDragStart != isDragStart) {
       setState(() {
         this.isDragStart = isDragStart;
+        if (!this.isDragStart) {
+          dragData = null;
+        }
       });
     }
   }
@@ -126,7 +132,7 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
     return DragAnimWidget(
         child: Stack(
           children: <Widget>[
-            child,
+            if (isDragStart && dragData == data) Opacity(opacity: 0.5, child: child) else child,
             if (isDragStart)
               Row(
                 children: <Widget>[
@@ -188,6 +194,7 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
           axis: widget.axis,
           data: data,
           onDragStarted: () {
+            dragData = data;
             setDragStart();
             widget.onDragStarted?.call(data);
           },
@@ -217,6 +224,7 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
           axis: widget.axis,
           data: data,
           onDragStarted: () {
+            dragData = data;
             setDragStart();
             widget.onDragStarted?.call(data);
           },
