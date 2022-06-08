@@ -64,6 +64,10 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
   AnimationStatus status = AnimationStatus.completed;
   bool isDragStart = false;
 
+  void endWillAccept() {
+    _timer?.cancel();
+  }
+
   void setDragStart({bool isDragStart = true}) {
     if (this.isDragStart != isDragStart) {
       setState(() {
@@ -93,7 +97,7 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
     if (moveData == data) {
       return;
     }
-    _timer?.cancel();
+    endWillAccept();
     _timer = Timer(const Duration(milliseconds: 200), () {
       if (!DragAnimNotification.isScroll) {
         if (widget.onWillAccept != null) {
@@ -290,7 +294,7 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
       } else if (!isNext && position.pixels <= position.minScrollExtent) {
         endAnimation();
       } else {
-        _timer?.cancel();
+        endWillAccept();
         position.animateTo(
           position.pixels + (isNext ? mediaQuery : -mediaQuery),
           duration: const Duration(milliseconds: 200),
@@ -325,7 +329,7 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
 
   @override
   void dispose() {
-    _timer?.cancel();
+    endWillAccept();
     endAnimation();
     super.dispose();
   }
