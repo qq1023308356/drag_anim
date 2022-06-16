@@ -1,7 +1,7 @@
 name: drag_anim
-description: A simple command-line application.
+description: 一个自动检查位置改变的动画widget
 version: 1.0.0
-# homepage: https://www.example.com
+homepage: https://github.com/qq1023308356/drag_anim
 
 environment:
   sdk: '>=2.12.0 <3.0.0'
