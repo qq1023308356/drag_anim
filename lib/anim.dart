@@ -48,7 +48,7 @@ class _DragAnimWidgetState extends AnimatedWidgetBaseState<DragAnimWidget> {
       renderAnimManage,
       animation.value,
       change: () {
-        SchedulerBinding.instance?.addPostFrameCallback((_) {
+        SchedulerBinding.instance.addPostFrameCallback((_) {
           update();
         });
       },
