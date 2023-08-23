@@ -1,6 +1,6 @@
 name: drag_anim
 description: 一个自动检查位置改变的动画widget
-version: 1.0.0
+version: 1.0.1
 homepage: https://github.com/qq1023308356/drag_anim
 
 environment:
