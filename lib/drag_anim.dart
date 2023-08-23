@@ -116,7 +116,13 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _scrollable = Scrollable.of(context);
+    if (widget.scrollController == null) {
+      try {
+        _scrollable = Scrollable.of(context);
+      } catch (e, s) {
+        log('找不到控制器，需要添加 scrollController，$e \n $s');
+      }
+    }
   }
 
   void setWillAccept(T? moveData, T data, {bool isFront = true}) {
