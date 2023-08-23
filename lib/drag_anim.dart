@@ -34,6 +34,7 @@ class DragAnim<T extends Object> extends StatefulWidget {
     this.draggingWidgetOpacity = 0.5,
     this.isDrag = true,
     this.isNotDragList,
+    this.isSaveMapSize = false,
     Key? key,
   }) : super(key: key);
   final Widget Function(List<Widget> children) buildItems;
@@ -58,7 +59,7 @@ class DragAnim<T extends Object> extends StatefulWidget {
   final double draggingWidgetOpacity;
   final bool isDrag;
   final List<T>? isNotDragList;
-
+  final bool isSaveMapSize;
   @override
   State<StatefulWidget> createState() => DragAnimState<T>();
 }
@@ -161,14 +162,31 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
     return mapSize[date] ?? Size.zero;
   }
 
+  Widget getSizedBox(T data, Widget child) {
+    if (widget.isSaveMapSize) {
+      final Size size = getRenderBoxSize(data);
+      return SizedBox(
+        width: size.width / 2,
+        height: size.height,
+        child: child,
+      );
+    } else {
+      return Expanded(child: child);
+    }
+  }
+
   Widget setDragScope(T data, Widget child) {
-    final Widget keyWidget = RenderBoxSize(child, (Size size) {
-      mapSize[data] = size;
-      if (mapSize.length == widget.dataList.length) {
-        setState(() {});
-      }
-    });
-    final Size size = getRenderBoxSize(data);
+    final Widget keyWidget;
+    if (widget.isSaveMapSize) {
+      keyWidget = RenderBoxSize(child, (Size size) {
+        mapSize[data] = size;
+        if (mapSize.length == widget.dataList.length) {
+          setState(() {});
+        }
+      });
+    } else {
+      keyWidget = child;
+    }
     return DragAnimWidget(
         child: Stack(
           children: <Widget>[
@@ -176,10 +194,9 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
             if (isDragStart && !isContains(data))
               Row(
                 children: <Widget>[
-                  SizedBox(
-                    width: size.width / 2,
-                    height: size.height,
-                    child: DragTarget<T>(
+                  getSizedBox(
+                    data,
+                    DragTarget<T>(
                         onWillAccept: (T? moveData) {
                           setWillAccept(moveData, data);
                           return moveData != null;
@@ -197,10 +214,9 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
                           return Container(color: Colors.transparent);
                         }),
                   ),
-                  SizedBox(
-                    width: size.width / 2,
-                    height: size.height,
-                    child: DragTarget<T>(
+                  getSizedBox(
+                    data,
+                    DragTarget<T>(
                         onWillAccept: (T? moveData) {
                           setWillAccept(moveData, data, isFront: false);
                           return moveData != null;
