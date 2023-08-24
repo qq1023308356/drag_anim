@@ -39,7 +39,7 @@ class DragAnim<T extends Object> extends StatefulWidget {
   final Widget Function(List<Widget> children) buildItems;
   final Widget Function(T data, DragItems dragItems) items;
   final List<T> dataList;
-  final Widget Function(T data, Widget child)? buildFeedback;
+  final Widget Function(T data, Widget child, Size size)? buildFeedback;
   final bool isLongPressDraggable;
   final Axis? axis;
   final void Function(T? moveData, T data, bool isFront)? onAccept;
@@ -302,12 +302,16 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
       }
       return child;
     });
-    return RenderBoxSize(draggable, (Size size) {
-      mapSize[data] = size;
-      if (mapSize.length == widget.dataList.length) {
-        setState(() {});
-      }
-    });
+    return RenderBoxSize(
+      draggable,
+      (Size size) {
+        mapSize[data] = size;
+        if (mapSize.length == widget.dataList.length) {
+          setState(() {});
+        }
+      },
+      key: ValueKey<T>(data),
+    );
   }
 
   Widget setFeedback(T data, Widget e) {
@@ -317,7 +321,7 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
       height: size.height,
       child: e,
     );
-    return widget.buildFeedback?.call(data, child) ?? child;
+    return widget.buildFeedback?.call(data, child, size) ?? child;
   }
 
   void _autoScrollIfNecessary(Offset details, Widget father) {
