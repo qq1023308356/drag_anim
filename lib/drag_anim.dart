@@ -34,7 +34,6 @@ class DragAnim<T extends Object> extends StatefulWidget {
     this.draggingWidgetOpacity = 0.5,
     this.isDrag = true,
     this.isNotDragList,
-    this.isSaveMapSize = false,
     Key? key,
   }) : super(key: key);
   final Widget Function(List<Widget> children) buildItems;
@@ -59,7 +58,6 @@ class DragAnim<T extends Object> extends StatefulWidget {
   final double draggingWidgetOpacity;
   final bool isDrag;
   final List<T>? isNotDragList;
-  final bool isSaveMapSize;
   @override
   State<StatefulWidget> createState() => DragAnimState<T>();
 }
@@ -169,30 +167,16 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
   }
 
   Widget getSizedBox(T data, Widget child) {
-    if (widget.isSaveMapSize) {
-      final Size size = getRenderBoxSize(data);
-      return SizedBox(
-        width: size.width / 2,
-        height: size.height,
-        child: child,
-      );
-    } else {
-      return Expanded(child: child);
-    }
+    final Size size = getRenderBoxSize(data);
+    return SizedBox(
+      width: size.width / 2,
+      height: size.height,
+      child: child,
+    );
   }
 
   Widget setDragScope(T data, Widget child) {
-    final Widget keyWidget;
-    if (widget.isSaveMapSize) {
-      keyWidget = RenderBoxSize(child, (Size size) {
-        mapSize[data] = size;
-        if (mapSize.length == widget.dataList.length) {
-          setState(() {});
-        }
-      });
-    } else {
-      keyWidget = child;
-    }
+    final Widget keyWidget = child;
     return DragAnimWidget(
         child: Stack(
           children: <Widget>[
@@ -318,7 +302,12 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
       }
       return child;
     });
-    return draggable;
+    return RenderBoxSize(draggable, (Size size) {
+      mapSize[data] = size;
+      if (mapSize.length == widget.dataList.length) {
+        setState(() {});
+      }
+    });
   }
 
   Widget setFeedback(T data, Widget e) {
