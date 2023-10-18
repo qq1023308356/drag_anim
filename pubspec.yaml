@@ -1,11 +1,11 @@
 name: drag_anim
 description: 一个自动检查位置改变的动画widget
-version: 1.0.4
+version: 1.0.5
 homepage: https://github.com/qq1023308356/drag_anim
 
 environment:
-  sdk: '>=2.12.0 <3.0.0'
-  flutter: ">=2.0.0"
+  sdk: '>=3.0.3 <4.0.0'
+  flutter: ">=3.10.6"
 
 dependencies:
   flutter:

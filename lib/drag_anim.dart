@@ -32,6 +32,8 @@ class DragAnim<T extends Object> extends StatefulWidget {
     this.scrollController,
     this.isDragAnimNotification = false,
     this.draggingWidgetOpacity = 0.5,
+    this.edgeScroll = 0.1,
+    this.edgeScrollSpeedMilliseconds = 100,
     this.isDrag = true,
     this.isNotDragList,
     Key? key,
@@ -56,8 +58,11 @@ class DragAnim<T extends Object> extends StatefulWidget {
   final ScrollController? scrollController;
   final bool isDragAnimNotification;
   final double draggingWidgetOpacity;
+  final double edgeScroll;
+  final int edgeScrollSpeedMilliseconds;
   final bool isDrag;
   final List<T>? isNotDragList;
+
   @override
   State<StatefulWidget> createState() => DragAnimState<T>();
 }
@@ -180,7 +185,14 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
     return DragAnimWidget(
         child: Stack(
           children: <Widget>[
-            if (isDragStart && dragData == data) Opacity(opacity: 0.5, child: keyWidget) else keyWidget,
+            if (isDragStart && dragData == data)
+              AnimatedOpacity(
+                opacity: widget.draggingWidgetOpacity,
+                duration: Duration(milliseconds: 300),
+                child: keyWidget,
+              )
+            else
+              keyWidget,
             if (isDragStart && !isContains(data))
               Row(
                 children: <Widget>[
@@ -342,7 +354,7 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
     final double scrollStart = _offsetExtent(scrollOrigin, widget.scrollDirection);
     final double scrollEnd = scrollStart + _sizeExtent(scrollRenderBox.size, widget.scrollDirection);
     final double currentOffset = _offsetExtent(details, widget.scrollDirection);
-    final double mediaQuery = _sizeExtent(MediaQuery.of(context).size, widget.scrollDirection) * 0.1;
+    final double mediaQuery = _sizeExtent(MediaQuery.of(context).size, widget.scrollDirection) * widget.edgeScroll;
     //print('当前位置  ${currentOffset}  ${scrollStart}  ${scrollEnd}  ${scrollOrigin}');
     if (currentOffset < (scrollStart + mediaQuery)) {
       animateTo(mediaQuery, isNext: false);
@@ -362,7 +374,7 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
       return;
     }
     DragAnimNotification.isScroll = true;
-    _scrollableTimer = Timer.periodic(const Duration(milliseconds: 200), (Timer timer) {
+    _scrollableTimer = Timer.periodic(Duration(milliseconds: widget.edgeScrollSpeedMilliseconds), (Timer timer) {
       if (isNext && position.pixels >= position.maxScrollExtent) {
         endAnimation();
       } else if (!isNext && position.pixels <= position.minScrollExtent) {
@@ -371,7 +383,7 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
         endWillAccept();
         position.animateTo(
           position.pixels + (isNext ? mediaQuery : -mediaQuery),
-          duration: const Duration(milliseconds: 200),
+          duration: Duration(milliseconds: widget.edgeScrollSpeedMilliseconds),
           curve: Curves.linear,
         );
       }
