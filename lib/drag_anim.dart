@@ -174,8 +174,8 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
   Widget getSizedBox(T data, Widget child) {
     final Size size = getRenderBoxSize(data);
     return SizedBox(
-      width: size.width / 2,
-      height: size.height,
+      width: size.width / (widget.scrollDirection == Axis.horizontal ? 2 : 1),
+      height: size.height / (widget.scrollDirection == Axis.vertical ? 2 : 1),
       child: child,
     );
   }
@@ -195,11 +195,11 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
               Visibility(
                 child: keyWidget,
                 maintainState: true,
-                maintainSize: true,
                 visible: dragData != data,
               ),
             if (isDragStart && !isContains(data))
-              Row(
+              Flex(
+                direction: widget.scrollDirection,
                 children: <Widget>[
                   getSizedBox(
                     data,
