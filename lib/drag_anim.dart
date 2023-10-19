@@ -185,14 +185,19 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
     return DragAnimWidget(
         child: Stack(
           children: <Widget>[
-            if (isDragStart && dragData == data)
+            if (isDragStart && dragData == data && widget.draggingWidgetOpacity > 0)
               AnimatedOpacity(
                 opacity: widget.draggingWidgetOpacity,
                 duration: Duration(milliseconds: 300),
                 child: keyWidget,
               )
             else
-              keyWidget,
+              Visibility(
+                child: keyWidget,
+                maintainState: true,
+                maintainSize: true,
+                visible: dragData != data,
+              ),
             if (isDragStart && !isContains(data))
               Row(
                 children: <Widget>[
