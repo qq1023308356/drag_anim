@@ -28,6 +28,9 @@ class DragAnimNotificationState extends State<DragAnimNotification> {
         if (notification is ScrollStartNotification) {
           _timer?.cancel();
           DragAnimNotification.isScroll = true;
+        } else if (notification is ScrollUpdateNotification) {
+          _timer?.cancel();
+          DragAnimNotification.isScroll = true;
         } else if (notification is ScrollEndNotification) {
           setScroll();
         }
