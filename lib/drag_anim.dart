@@ -34,6 +34,7 @@ class DragAnim<T extends Object> extends StatefulWidget {
     this.draggingWidgetOpacity = 0.5,
     this.edgeScroll = 0.1,
     this.edgeScrollSpeedMilliseconds = 100,
+    this.isEdgeScroll = true,
     this.isDrag = true,
     this.isNotDragList,
     Key? key,
@@ -62,6 +63,7 @@ class DragAnim<T extends Object> extends StatefulWidget {
   final int edgeScrollSpeedMilliseconds;
   final bool isDrag;
   final List<T>? isNotDragList;
+  final bool isEdgeScroll;
 
   @override
   State<StatefulWidget> createState() => DragAnimState<T>();
@@ -266,7 +268,9 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
               widget.onDragStarted?.call(data);
             },
             onDragUpdate: (DragUpdateDetails details) {
-              _autoScrollIfNecessary(details.globalPosition, father);
+              if (widget.isEdgeScroll) {
+                _autoScrollIfNecessary(details.globalPosition, father);
+              }
               widget.onDragUpdate?.call(details, data);
             },
             onDraggableCanceled: (Velocity velocity, Offset offset) {
@@ -296,7 +300,9 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
               widget.onDragStarted?.call(data);
             },
             onDragUpdate: (DragUpdateDetails details) {
-              _autoScrollIfNecessary(details.globalPosition, father);
+              if (widget.isEdgeScroll) {
+                _autoScrollIfNecessary(details.globalPosition, father);
+              }
               widget.onDragUpdate?.call(details, data);
             },
             onDraggableCanceled: (Velocity velocity, Offset offset) {
