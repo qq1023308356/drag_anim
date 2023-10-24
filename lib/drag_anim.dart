@@ -193,6 +193,8 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
             return Visibility(
               child: keyWidget,
               maintainState: true,
+              maintainSize: true,
+              maintainAnimation: true,
               visible: dragData != data,
             );
           },
