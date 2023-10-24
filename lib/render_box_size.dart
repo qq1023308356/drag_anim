@@ -21,7 +21,7 @@ class RenderBoxSizeState extends State<RenderBoxSize> {
 
   void onChangeSize() {
     final RenderBox? renderBox = context.findRenderObject() as RenderBox?;
-    if (renderBox != null) {
+    if (renderBox != null && renderBox.hasSize) {
       widget.onChangeSize(renderBox.size);
     }
   }
