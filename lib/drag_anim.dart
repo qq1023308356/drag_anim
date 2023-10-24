@@ -37,18 +37,19 @@ class DragAnim<T extends Object> extends StatefulWidget {
     this.isEdgeScroll = true,
     this.isDrag = true,
     this.isNotDragList,
+    this.dragAnchorStrategy = childDragAnchorStrategy,
     Key? key,
   }) : super(key: key);
   final Widget Function(List<Widget> children) buildItems;
   final Widget Function(T data, DragItems dragItems) items;
   final List<T> dataList;
-  final Widget Function(T data, Widget child, Size size)? buildFeedback;
+  final Widget Function(T data, Widget child, Size? size)? buildFeedback;
   final bool isLongPressDraggable;
   final Axis? axis;
-  final void Function(T? moveData, T data, bool isFront)? onAccept;
-  final bool Function(T? moveData, T data, bool isFront)? onWillAccept;
-  final void Function(T? moveData, T data, bool isFront)? onLeave;
-  final void Function(T data, DragTargetDetails<T> details, bool isFront)? onMove;
+  final void Function(T? moveData, T data)? onAccept;
+  final bool Function(T? moveData, T data, bool isTimer)? onWillAccept;
+  final void Function(T? moveData, T data)? onLeave;
+  final void Function(T data, DragTargetDetails<T> details)? onMove;
   final Axis scrollDirection;
   final HitTestBehavior hitTestBehavior;
   final void Function(T data)? onDragStarted;
@@ -64,6 +65,7 @@ class DragAnim<T extends Object> extends StatefulWidget {
   final bool isDrag;
   final List<T>? isNotDragList;
   final bool isEdgeScroll;
+  final DragAnchorStrategy dragAnchorStrategy;
 
   @override
   State<StatefulWidget> createState() => DragAnimState<T>();
@@ -130,7 +132,7 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
     }
   }
 
-  void setWillAccept(T? moveData, T data, {bool isFront = true}) {
+  void setWillAccept(T? moveData, T data) {
     if (moveData == data) {
       return;
     }
@@ -139,21 +141,12 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
       _timer = Timer(const Duration(milliseconds: 200), () {
         if (!DragAnimNotification.isScroll) {
           if (widget.onWillAccept != null) {
-            widget.onWillAccept?.call(moveData, data, isFront);
+            widget.onWillAccept?.call(moveData, data, true);
           } else if (moveData != null) {
             setState(() {
               final int index = widget.dataList.indexOf(data);
-              if (isFront) {
-                widget.dataList.remove(moveData);
-                widget.dataList.insert(index, moveData);
-              } else {
-                widget.dataList.remove(moveData);
-                if (index + 1 < widget.dataList.length) {
-                  widget.dataList.insert(index + 1, moveData);
-                } else {
-                  widget.dataList.insert(index, moveData);
-                }
-              }
+              widget.dataList.remove(moveData);
+              widget.dataList.insert(index, moveData);
             });
           }
         }
@@ -169,84 +162,40 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
     return false;
   }
 
-  Size getRenderBoxSize(T? date) {
-    return mapSize[date] ?? Size.zero;
-  }
-
-  Widget getSizedBox(T data, Widget child) {
-    final Size size = getRenderBoxSize(data);
-    return SizedBox(
-      width: size.width / (widget.scrollDirection == Axis.horizontal ? 2 : 1),
-      height: size.height / (widget.scrollDirection == Axis.vertical ? 2 : 1),
-      child: child,
-    );
+  Size? getRenderBoxSize(T? date) {
+    return mapSize[date];
   }
 
   Widget setDragScope(T data, Widget child) {
     final Widget keyWidget = child;
     return DragAnimWidget(
-        child: Stack(
-          children: <Widget>[
-            if (isDragStart && dragData == data && widget.draggingWidgetOpacity > 0)
-              AnimatedOpacity(
+        child: DragTarget<T>(
+          onWillAccept: (T? moveData) {
+            widget.onWillAccept?.call(moveData, data, false);
+            if (isDragStart) {
+              setWillAccept(moveData, data);
+              return moveData != null;
+            }
+            return false;
+          },
+          onAccept: widget.onAccept == null ? null : (T moveData) => widget.onAccept?.call(moveData, data),
+          onLeave: widget.onLeave == null ? null : (T? moveData) => widget.onLeave?.call(moveData, data),
+          onMove: widget.onMove == null ? null : (DragTargetDetails<T> details) => widget.onMove?.call(data, details),
+          hitTestBehavior: widget.hitTestBehavior,
+          builder: (BuildContext context, List<T?> candidateData, List<dynamic> rejectedData) {
+            if (widget.draggingWidgetOpacity > 0 && dragData == data) {
+              return AnimatedOpacity(
                 opacity: widget.draggingWidgetOpacity,
                 duration: Duration(milliseconds: 300),
                 child: keyWidget,
-              )
-            else
-              Visibility(
-                child: keyWidget,
-                maintainState: true,
-                visible: dragData != data,
-              ),
-            if (isDragStart && !isContains(data))
-              Flex(
-                direction: widget.scrollDirection,
-                children: <Widget>[
-                  getSizedBox(
-                    data,
-                    DragTarget<T>(
-                        onWillAccept: (T? moveData) {
-                          setWillAccept(moveData, data);
-                          return moveData != null;
-                        },
-                        onAccept: widget.onAccept == null
-                            ? null
-                            : (T moveData) => widget.onAccept?.call(moveData, data, true),
-                        onLeave:
-                            widget.onLeave == null ? null : (T? moveData) => widget.onLeave?.call(moveData, data, true),
-                        onMove: widget.onMove == null
-                            ? null
-                            : (DragTargetDetails<T> details) => widget.onMove?.call(data, details, true),
-                        hitTestBehavior: widget.hitTestBehavior,
-                        builder: (BuildContext context, List<T?> candidateData, List<dynamic> rejectedData) {
-                          return Container(color: Colors.transparent);
-                        }),
-                  ),
-                  getSizedBox(
-                    data,
-                    DragTarget<T>(
-                        onWillAccept: (T? moveData) {
-                          setWillAccept(moveData, data, isFront: false);
-                          return moveData != null;
-                        },
-                        onAccept: widget.onAccept == null
-                            ? null
-                            : (T moveData) => widget.onAccept?.call(moveData, data, false),
-                        onLeave: widget.onLeave == null
-                            ? null
-                            : (T? moveData) => widget.onLeave?.call(moveData, data, false),
-                        onMove: widget.onMove == null
-                            ? null
-                            : (DragTargetDetails<T> details) => widget.onMove?.call(data, details, false),
-                        hitTestBehavior: widget.hitTestBehavior,
-                        builder: (BuildContext context, List<T?> candidateData, List<dynamic> rejectedData) {
-                          return Container(color: Colors.transparent);
-                        }),
-                  ),
-                ],
-              ),
-          ],
+              );
+            }
+            return Visibility(
+              child: keyWidget,
+              maintainState: true,
+              visible: dragData != data,
+            );
+          },
         ),
         onAnimationStatus: (AnimationStatus status) {
           this.status = status;
@@ -267,6 +216,7 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
               setDragStart();
               widget.onDragStarted?.call(data);
             },
+            dragAnchorStrategy: widget.dragAnchorStrategy,
             onDragUpdate: (DragUpdateDetails details) {
               if (widget.isEdgeScroll) {
                 _autoScrollIfNecessary(details.globalPosition, father);
@@ -299,6 +249,7 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
               setDragStart();
               widget.onDragStarted?.call(data);
             },
+            dragAnchorStrategy: widget.dragAnchorStrategy,
             onDragUpdate: (DragUpdateDetails details) {
               if (widget.isEdgeScroll) {
                 _autoScrollIfNecessary(details.globalPosition, father);
@@ -329,22 +280,21 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
       draggable,
       (Size size) {
         mapSize[data] = size;
-        if (mapSize.length == widget.dataList.length) {
-          setState(() {});
-        }
       },
       key: ValueKey<T>(data),
     );
   }
 
   Widget setFeedback(T data, Widget e) {
-    final Size size = getRenderBoxSize(data);
-    final Widget child = SizedBox(
-      width: size.width,
-      height: size.height,
-      child: e,
-    );
-    return widget.buildFeedback?.call(data, child, size) ?? child;
+    return Builder(builder: (BuildContext context) {
+      final Size? size = getRenderBoxSize(data);
+      final Widget child = SizedBox(
+        width: size?.width,
+        height: size?.height,
+        child: e,
+      );
+      return widget.buildFeedback?.call(data, e, size) ?? child;
+    });
   }
 
   void _autoScrollIfNecessary(Offset details, Widget father) {
