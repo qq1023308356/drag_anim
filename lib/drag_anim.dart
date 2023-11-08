@@ -38,6 +38,7 @@ class DragAnim<T extends Object> extends StatefulWidget {
     this.isDrag = true,
     this.isNotDragList,
     this.dragAnchorStrategy = childDragAnchorStrategy,
+    this.maxSimultaneousDrags = 1,
     Key? key,
   }) : super(key: key);
   final Widget Function(List<Widget> children) buildItems;
@@ -66,7 +67,7 @@ class DragAnim<T extends Object> extends StatefulWidget {
   final List<T>? isNotDragList;
   final bool isEdgeScroll;
   final DragAnchorStrategy dragAnchorStrategy;
-
+  final int maxSimultaneousDrags;
   @override
   State<StatefulWidget> createState() => DragAnimState<T>();
 }
@@ -211,6 +212,7 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
         if (widget.isLongPressDraggable) {
           child = LongPressDraggable<T>(
             feedback: setFeedback(data, father),
+            maxSimultaneousDrags: widget.maxSimultaneousDrags,
             axis: widget.axis,
             data: data,
             onDragStarted: () {
@@ -244,6 +246,7 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
         } else {
           child = Draggable<T>(
             feedback: setFeedback(data, father),
+            maxSimultaneousDrags: widget.maxSimultaneousDrags,
             axis: widget.axis,
             data: data,
             onDragStarted: () {
