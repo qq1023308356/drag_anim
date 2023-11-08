@@ -68,6 +68,7 @@ class DragAnim<T extends Object> extends StatefulWidget {
   final bool isEdgeScroll;
   final DragAnchorStrategy dragAnchorStrategy;
   final int maxSimultaneousDrags;
+
   @override
   State<StatefulWidget> createState() => DragAnimState<T>();
 }
@@ -134,7 +135,7 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
   }
 
   void setWillAccept(T? moveData, T data) {
-    if (moveData == data) {
+    if (moveData == data || (widget.maxSimultaneousDrags == 1 && moveData != dragData)) {
       return;
     }
     if (status == AnimationStatus.completed) {
@@ -184,6 +185,9 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
           onMove: widget.onMove == null ? null : (DragTargetDetails<T> details) => widget.onMove?.call(data, details),
           hitTestBehavior: widget.hitTestBehavior,
           builder: (BuildContext context, List<T?> candidateData, List<dynamic> rejectedData) {
+            if (widget.maxSimultaneousDrags == 1 && data != dragData) {
+              return keyWidget;
+            }
             if (widget.draggingWidgetOpacity > 0 && dragData == data) {
               return AnimatedOpacity(
                 opacity: widget.draggingWidgetOpacity,
@@ -208,11 +212,15 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
   Widget setDraggable(T data) {
     final Widget draggable = widget.items(data, (Widget father) {
       Widget child = setDragScope(data, father);
+      int maxSimultaneousDrags = widget.maxSimultaneousDrags;
+      if (maxSimultaneousDrags == 1 && dragData != null && dragData != data) {
+        maxSimultaneousDrags = 0;
+      }
       if (widget.isDrag && !isContains(data)) {
         if (widget.isLongPressDraggable) {
           child = LongPressDraggable<T>(
             feedback: setFeedback(data, father),
-            maxSimultaneousDrags: widget.maxSimultaneousDrags,
+            maxSimultaneousDrags: maxSimultaneousDrags,
             axis: widget.axis,
             data: data,
             onDragStarted: () {
@@ -246,7 +254,7 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
         } else {
           child = Draggable<T>(
             feedback: setFeedback(data, father),
-            maxSimultaneousDrags: widget.maxSimultaneousDrags,
+            maxSimultaneousDrags: maxSimultaneousDrags,
             axis: widget.axis,
             data: data,
             onDragStarted: () {
@@ -292,6 +300,9 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
 
   Widget setFeedback(T data, Widget e) {
     return Builder(builder: (BuildContext context) {
+      if (widget.maxSimultaneousDrags == 1 && data != dragData) {
+        return const SizedBox.shrink();
+      }
       final Size? size = getRenderBoxSize(data);
       final Widget child = SizedBox(
         width: size?.width,
