@@ -115,4 +115,4 @@ class _MyHomePageState extends State<MyHomePage> {
 ```
 
 <!-- Links -->
-[aligned_example]: https://raw.githubusercontent.com/qq1023308356/drag_anim/main/docs/images/123.gif
+[aligned_example]: https://raw.githubusercontent.com/qq1023308356/drag_anim/main/doc/images/123.gif
