@@ -3,9 +3,10 @@ import 'dart:async';
 import 'package:flutter/cupertino.dart';
 
 class DragAnimNotification extends StatefulWidget {
-  const DragAnimNotification({required this.child, Key? key}) : super(key: key);
+  const DragAnimNotification({required this.child, Key? key, this.onNotification}) : super(key: key);
   final Widget child;
   static bool isScroll = false;
+  final Function(ScrollNotification notification)? onNotification;
 
   @override
   State<StatefulWidget> createState() => DragAnimNotificationState();
@@ -25,6 +26,7 @@ class DragAnimNotificationState extends State<DragAnimNotification> {
   Widget build(BuildContext context) {
     return NotificationListener<ScrollNotification>(
       onNotification: (ScrollNotification notification) {
+        widget.onNotification?.call(notification);
         if (notification is ScrollStartNotification) {
           _timer?.cancel();
           DragAnimNotification.isScroll = true;
