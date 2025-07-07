@@ -1,10 +1,8 @@
 # drag_anim
 #### **注意事项**
 - 自动检测位置变化进行位移动画，需要widget不会被重新创建根据情况添加key
-- 如果滑动组件在buildItems下则可以嵌套DragAnimNotification也可以设置isDragAnimNotification = true
-- DragAnim 不是滑动组件的子widget的时候需要传scrollController，不然无法到边缘自动滚动
-- 理论支持各种widget，例子是用flutter_staggered_grid_view 进行测试
-- 注意需要widget不会被销毁，重新创建
+- 是滑动组件时候需要传scrollController、scrollDirection，不然无法到边缘自动滚动
+- 理论支持所有widget，已经测试flutter_staggered_grid_view、listView、GridView
 
 
 ```yaml
@@ -16,52 +14,104 @@ dependencies:
 ![Staired example][aligned_example]
 
 ```dart
+import 'package:drag_anim/drag_anim.dart';
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return DragAnimNotification(
-      child: Center(
-        child: Container(
-          alignment: Alignment.centerLeft,
-          height: 468,
-          child: ListView(
-            physics: const BouncingScrollPhysics(),
-            scrollDirection: Axis.horizontal,
-            children: <Widget>[
-              DragAnim<HomeEditCard>(
-                scrollDirection: Axis.horizontal,
-                buildItems: (List<Widget> children) {
-                  return StaggeredGrid.count(
-                    crossAxisCount: 4,
-                    mainAxisSpacing: 15,
-                    crossAxisSpacing: 15,
-                    children: children,
-                  );
-                },
-                items: (HomeEditCard element, DragItems dragItems) {
-                  return StaggeredGridTile.count(
-                    key: ValueKey<String>(element.key ?? ''),
-                    mainAxisCellCount: element.mainAxisCellCount,
-                    crossAxisCellCount: element.crossAxisCellCount,
-                    child: dragItems(Container(
-                      color: Colors.yellow.withOpacity(0.3),
-                    )),
-                  );
-                },
-                buildFeedback: (HomeEditCard data, Widget widget) {
-                  return Container(
-                    width: 250,
-                    height: 250,
-                    color: Colors.red,
-                  );
-                },
-                dataList: list,
-              ),
-            ],
-          ),
-        ),
+    return MaterialApp(
+      title: 'Flutter Demo',
+      theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple)),
+      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+    );
+  }
+}
+
+class MyHomePage extends StatefulWidget {
+  const MyHomePage({super.key, required this.title});
+
+  final String title;
+
+  @override
+  State<MyHomePage> createState() => _MyHomePageState();
+}
+
+class _MyHomePageState extends State<MyHomePage> {
+  List<String> items = [
+    'a',
+    'b',
+    'c',
+    'd',
+    'e',
+    'f',
+    'g',
+    'h',
+    'i',
+    'j',
+    'k',
+    'l',
+    'm',
+    'n',
+    'o',
+    'p',
+    'q',
+    'r',
+    's',
+    't',
+    'u',
+    'v',
+    'w',
+    'x',
+    'y',
+    'z',
+  ];
+  ScrollController scrollController = ScrollController();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(backgroundColor: Theme.of(context).colorScheme.inversePrimary, title: Text(widget.title)),
+      body: DragAnim(
+        scrollController: scrollController,
+        scrollDirection: Axis.vertical,
+        buildItems: (dragItems) {
+          return GridView.builder(
+            controller: scrollController,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 6,
+              mainAxisSpacing: 10,
+              crossAxisSpacing: 10,
+            ),
+            itemBuilder: (_, index) {
+              return dragItems(
+                data: items[index],
+                child: Container(
+                  color: Colors.red,
+                  alignment: Alignment.center,
+                  child: Text(
+                    items[index],
+                    style: const TextStyle(fontSize: 30, color: Colors.white, decoration: TextDecoration.none),
+                  ),
+                ),
+                key: ValueKey<String>(items[index]),
+              );
+            },
+            itemCount: items.length,
+          );
+        },
+        dataList: items,
       ),
     );
   }
+}
 ```
 
 <!-- Links -->
