@@ -1,6 +1,6 @@
 ## 1.0.0
 
-- Initial version.
+- 全新版本支持所有widget
 
 ## 1.0.1
 

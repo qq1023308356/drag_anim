@@ -1,6 +1,6 @@
 # drag_anim
 #### **注意事项**
-- 自动检测位置变化进行位移动画，需要widget不会被重新创建根据情况添加key
+- 自动检测位置变化进行位移动画
 - 是滑动组件时候需要传scrollController、scrollDirection，不然无法到边缘自动滚动
 - 理论支持所有widget，已经测试flutter_staggered_grid_view、listView、GridView
 
