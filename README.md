@@ -1,8 +1,8 @@
 # drag_anim
-#### **注意事项**
-- 自动检测位置变化进行位移动画
-- 是滑动组件时候需要传scrollController、scrollDirection，不然无法到边缘自动滚动
-- 理论支持所有widget，已经测试flutter_staggered_grid_view、listView、GridView
+#### **Precautions**
+- Support drag-and-drop function with components
+- When sliding the component, you need to pass the scrollController and scrollDirection, otherwise it will not be able to automatically scroll to the edge
+- Theoretically supports all widgets, has been tested flutter_staggered_grid_view, listView, GridView
 
 
 ```yaml
@@ -113,6 +113,50 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 ```
+- Or flutter_staggered_grid_view
+```dart
+@override
+Widget build(BuildContext context) {
+  return Scaffold(
+    appBar: AppBar(backgroundColor: Theme.of(context).colorScheme.inversePrimary, title: Text(widget.title)),
+    body: DragAnim(
+      scrollController: scrollController,
+      scrollDirection: Axis.vertical,
+      buildItems: (dragItems) {
+        return MasonryGridView.count(
+          crossAxisCount: 4,
+          mainAxisSpacing: 4,
+          crossAxisSpacing: 4,
+          controller: scrollController,
+          itemCount: items.length,
+          itemBuilder: (context, index) {
+            return dragItems(
+              data: items[index],
+              child: Container(
+                color: Colors.red,
+                alignment: Alignment.center,
+                child: Text(
+                  items[index],
+                  style: const TextStyle(fontSize: 30, color: Colors.white, decoration: TextDecoration.none),
+                ),
+              ),
+              key: ValueKey<String>(items[index]),
+            );
+          },
+        );
+      },
+      dataList: items,
+    ),
+  );
+}
+```
+
+# LICENSE!
+Drag Anim is [MIT-licensed](https://github.com/Mindinventory/flutter_draggable_gridview/blob/main/LICENSE "MIT-licensed").
+
+# Let us know!
+We’d be really happy if you send us links to your projects where you use our component. Just send an email to 1023308356@qq.com And do let us know if you have any questions or suggestion regarding our work.
+
 
 <!-- Links -->
 [aligned_example]: https://raw.githubusercontent.com/qq1023308356/drag_anim/main/doc/images/123.gif
