@@ -180,7 +180,7 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
       key: key,
       child: DragTarget<T>(
         onWillAcceptWithDetails: (DragTargetDetails<T> details) {
-          if (isDragStart) {
+          if (isDragStart && !DragAnimNotification.isScroll) {
             setWillAccept(details, data);
             return true;
           }
@@ -361,7 +361,6 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
     } else if (!isNext && position.pixels <= position.minScrollExtent) {
       return;
     }
-    DragAnimNotification.isScroll = true;
     _scrollableTimer = Timer.periodic(Duration(milliseconds: widget.edgeScrollSpeedMilliseconds), (Timer timer) {
       if (isNext && position.pixels >= position.maxScrollExtent) {
         endAnimation();
@@ -379,7 +378,6 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
   }
 
   void endAnimation() {
-    DragAnimNotification.isScroll = false;
     _scrollableTimer?.cancel();
   }
 
