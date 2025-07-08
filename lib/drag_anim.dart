@@ -98,7 +98,9 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
   Widget build(BuildContext context) {
     return DragAnimNotification(
       onNotification: (ScrollNotification notification) {
-        if (notification is ScrollEndNotification) {
+        if (notification is ScrollStartNotification) {
+          scrollEndTimer?.cancel();
+        } else if (notification is ScrollEndNotification) {
           scrollEndTimer?.cancel();
           scrollEndTimer = Timer(const Duration(milliseconds: 150), () {
             if (!mounted) {
