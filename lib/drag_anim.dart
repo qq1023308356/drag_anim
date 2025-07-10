@@ -168,7 +168,7 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
     final Widget keyWidget = child;
     return DragAnimWidget(
       offsetMap: _offsetMap,
-      isExecuteAnimation: isDragStart,
+      isExecuteAnimation: () => isDragStart,
       didAndChange: (BuildContext context, bool isDispose) {
         if (isDispose) {
           _contextMap.remove(key);

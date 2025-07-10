@@ -8,7 +8,7 @@ class DragAnimWidget<T> extends ImplicitlyAnimatedWidget {
   const DragAnimWidget(
       {required this.child,
       required this.offsetMap,
-      this.isExecuteAnimation = true,
+      this.isExecuteAnimation,
       this.scrollController,
       this.didAndChange,
       Duration? duration,
@@ -21,7 +21,7 @@ class DragAnimWidget<T> extends ImplicitlyAnimatedWidget {
   final ScrollController? scrollController;
   final Function(BuildContext context, bool isDispose)? didAndChange;
   final Map<Key, Offset> offsetMap;
-  final bool isExecuteAnimation;
+  final bool Function()? isExecuteAnimation;
 
   @override
   ImplicitlyAnimatedWidgetState<ImplicitlyAnimatedWidget> createState() => _DragAnimWidgetState();
@@ -48,7 +48,6 @@ class _DragAnimWidgetState extends AnimatedWidgetBaseState<DragAnimWidget> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    renderAnimManage.isExecuteAnimation = widget.isExecuteAnimation;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         widget.didAndChange?.call(context, false);
@@ -163,7 +162,8 @@ class _AnimRenderObject extends RenderShiftedBox {
       renderAnimManage.lastOffset ??= Offset(localOffset.dx, localOffset.dy);
       final Offset? lastOffset = renderAnimManage.lastOffset;
       final Tween<Offset>? tweenOffset = renderAnimManage.tweenOffset;
-      if (!renderAnimManage.isExecuteAnimation) {
+      if (renderAnimManage.isExecuteAnimation?.call() == false) {
+        renderAnimManage.lastOffset = localOffset;
         context.paintChild(child, parentPosition);
         return;
       }
@@ -189,7 +189,7 @@ class _AnimRenderObject extends RenderShiftedBox {
 }
 
 class RenderAnimManage {
-  RenderAnimManage(this.key, this.getContext, this.offsetMap, {this.isExecuteAnimation = true});
+  RenderAnimManage(this.key, this.getContext, this.offsetMap, {this.isExecuteAnimation});
 
   Tween<Offset>? tweenOffset;
   final Key? key;
@@ -197,7 +197,7 @@ class RenderAnimManage {
   late Animation<double> animation;
   final BuildContext Function() getContext;
   final Map<Key, Offset> offsetMap;
-  bool isExecuteAnimation;
+  final bool Function()? isExecuteAnimation;
 
   Offset? get currentOffset {
     final RenderBox? renderBox = getContext().findRenderObject() as RenderBox?;
