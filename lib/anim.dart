@@ -1,4 +1,5 @@
 import 'package:drag_anim/drag_anim_notification.dart';
+import 'package:drag_anim/render_anim_manage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -7,7 +8,7 @@ import 'package:flutter/scheduler.dart';
 class DragAnimWidget<T> extends ImplicitlyAnimatedWidget {
   const DragAnimWidget(
       {required this.child,
-      required this.offsetMap,
+      required this.contextOffset,
       this.isExecuteAnimation,
       this.scrollController,
       this.didAndChange,
@@ -20,7 +21,7 @@ class DragAnimWidget<T> extends ImplicitlyAnimatedWidget {
   static const Duration _animDuration = Duration(milliseconds: 200);
   final ScrollController? scrollController;
   final Function(BuildContext context, bool isDispose)? didAndChange;
-  final Map<Key, Offset> offsetMap;
+  final ContextOffset? Function()? contextOffset;
   final bool Function()? isExecuteAnimation;
 
   @override
@@ -29,9 +30,7 @@ class DragAnimWidget<T> extends ImplicitlyAnimatedWidget {
 
 class _DragAnimWidgetState extends AnimatedWidgetBaseState<DragAnimWidget> {
   late RenderAnimManage renderAnimManage = RenderAnimManage(
-    widget.key,
-    () => context,
-    widget.offsetMap,
+    widget.contextOffset,
     isExecuteAnimation: widget.isExecuteAnimation,
   );
 
@@ -186,35 +185,4 @@ class _AnimRenderObject extends RenderShiftedBox {
       }
     }
   }
-}
-
-class RenderAnimManage {
-  RenderAnimManage(this.key, this.getContext, this.offsetMap, {this.isExecuteAnimation});
-
-  Tween<Offset>? tweenOffset;
-  final Key? key;
-  late AnimationController controller;
-  late Animation<double> animation;
-  final BuildContext Function() getContext;
-  final Map<Key, Offset> offsetMap;
-  final bool Function()? isExecuteAnimation;
-
-  Offset? get currentOffset {
-    final RenderBox? renderBox = getContext().findRenderObject() as RenderBox?;
-    if (renderBox != null) {
-      final Offset position = renderBox.localToGlobal(Offset.zero);
-      return position;
-    }
-    return Offset.zero;
-  }
-
-  set lastOffset(Offset? value) {
-    Key? key = this.key;
-    Offset? offset = value;
-    if (key != null && offset != null) {
-      offsetMap[key] = offset;
-    }
-  }
-
-  Offset? get lastOffset => offsetMap[key];
 }

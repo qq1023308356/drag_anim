@@ -4,6 +4,7 @@ import 'package:drag_anim/anim.dart';
 import 'package:flutter/material.dart';
 
 import 'drag_anim_notification.dart';
+import 'render_anim_manage.dart';
 
 typedef DragItems<T> = Widget Function({required T data, required Widget child, required Key key});
 
@@ -74,8 +75,7 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
   AnimationStatus status = AnimationStatus.completed;
   bool isDragStart = false;
   T? dragData;
-  final Map<Key, BuildContext> _contextMap = {};
-  final Map<Key, Offset> _offsetMap = {};
+  final Map<Key, ContextOffset> _contextOffsetMap = {};
 
   void endWillAccept() {
     _timer?.cancel();
@@ -106,11 +106,8 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
             if (!mounted) {
               return;
             }
-            _offsetMap.forEach((key, value) {
-              final RenderBox? renderBox = _contextMap[key]?.findRenderObject() as RenderBox?;
-              if (renderBox != null) {
-                _offsetMap[key] = renderBox.localToGlobal(Offset.zero);
-              }
+            _contextOffsetMap.forEach((key, value) {
+              value.updateOffset();
             });
           });
         }
@@ -167,13 +164,13 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
   Widget setDragScope(T data, Widget child, Key key) {
     final Widget keyWidget = child;
     return DragAnimWidget(
-      offsetMap: _offsetMap,
+      contextOffset: () => _contextOffsetMap[key],
       isExecuteAnimation: () => isDragStart,
       didAndChange: (BuildContext context, bool isDispose) {
         if (isDispose) {
-          _contextMap.remove(key);
+          _contextOffsetMap.remove(key);
         } else {
-          _contextMap[key] = context;
+          _contextOffsetMap[key] = ContextOffset(context, Offset.zero);
         }
       },
       scrollController: widget.scrollController,
@@ -302,7 +299,7 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
   }
 
   Size? getBoxSize(Key? key) {
-    final RenderBox? renderBox = _contextMap[key]?.findRenderObject() as RenderBox?;
+    final RenderBox? renderBox = _contextOffsetMap[key]?.context.findRenderObject() as RenderBox?;
     if (renderBox != null) {
       return renderBox.size;
     }
@@ -404,5 +401,6 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
     endWillAccept();
     endAnimation();
     super.dispose();
+    _contextOffsetMap.clear();
   }
 }
