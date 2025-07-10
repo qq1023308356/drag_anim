@@ -131,9 +131,9 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
     }
   }
 
-  void setWillAccept(DragTargetDetails<T> details, T data) {
+  bool setWillAccept(DragTargetDetails<T> details, T data) {
     if (details.data == data || (widget.maxSimultaneousDrags == 1 && details.data != dragData)) {
-      return;
+      return false;
     }
     if (status == AnimationStatus.completed) {
       endWillAccept();
@@ -150,7 +150,9 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
           }
         }
       });
+      return true;
     }
+    return false;
   }
 
   bool isContains(T data) {
@@ -178,8 +180,7 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
       child: DragTarget<T>(
         onWillAcceptWithDetails: (DragTargetDetails<T> details) {
           if (isDragStart && !DragAnimNotification.isScroll) {
-            setWillAccept(details, data);
-            return true;
+            return setWillAccept(details, data);
           }
           return false;
         },
