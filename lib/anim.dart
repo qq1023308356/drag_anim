@@ -74,7 +74,6 @@ class _DragAnimWidgetState extends AnimatedWidgetBaseState<DragAnimWidget> {
     return _DragAnimRender(
       renderAnimManage,
       animation.value,
-      key: widget.key,
       change: () {
         SchedulerBinding.instance.addPostFrameCallback((_) {
           update();
@@ -101,7 +100,7 @@ class _DragAnimRender extends SingleChildRenderObjectWidget {
 
   @override
   _AnimRenderObject createRenderObject(BuildContext context) {
-    return _AnimRenderObject(renderAnimManage, update, change: change, key: key);
+    return _AnimRenderObject(renderAnimManage, update, change: change);
   }
 
   @override
@@ -113,11 +112,10 @@ class _DragAnimRender extends SingleChildRenderObjectWidget {
 }
 
 class _AnimRenderObject extends RenderShiftedBox {
-  _AnimRenderObject(this.renderAnimManage, this.update, {RenderBox? child, this.change, this.key}) : super(child);
+  _AnimRenderObject(this.renderAnimManage, this.update, {RenderBox? child, this.change}) : super(child);
   final void Function()? change;
   final RenderAnimManage renderAnimManage;
   final double update;
-  final Key? key;
 
   bool get isExecute => !DragAnimNotification.isScroll;
 
@@ -175,11 +173,11 @@ class _AnimRenderObject extends RenderShiftedBox {
           Offset startOffset = lastOffset - localOffset + parentPosition;
           context.paintChild(child, startOffset);
           setStart(startOffset, parentPosition);
-          //print("开始 ${DragAnimNotification.isScroll} $key  $startOffset  $parentPosition");
+          //print("开始 ${DragAnimNotification.isScroll}  $startOffset  $parentPosition");
           renderAnimManage.lastOffset = localOffset;
         } else {
           renderAnimManage.lastOffset = localOffset;
-          //print("正常 $key   ${renderAnimManage.currentOffset}  $localOffset  $parentPosition");
+          //print("正常 ${DragAnimNotification.isScroll}  $localOffset  $parentPosition");
           context.paintChild(child, parentPosition);
         }
       }

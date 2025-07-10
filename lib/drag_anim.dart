@@ -170,7 +170,7 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
         if (isDispose) {
           _contextOffsetMap.remove(key);
         } else {
-          _contextOffsetMap[key] = ContextOffset(context, Offset.zero);
+          _contextOffsetMap[key] = ContextOffset(context, Offset.zero)..updateOffset();
         }
       },
       scrollController: widget.scrollController,
