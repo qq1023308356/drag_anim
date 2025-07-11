@@ -1,6 +1,6 @@
 name: drag_anim
 description: Support reorderable for all widgets, sliver。Waterfall、listView、GridView
-version: 1.1.6
+version: 1.1.7
 homepage: https://github.com/qq1023308356/drag_anim
 
 environment:
