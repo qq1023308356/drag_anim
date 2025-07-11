@@ -12,6 +12,12 @@ dependencies:
   drag_anim: <latest_version>
 ```
 
+
+| List Demo |                                                   Sliver Demo                                                   |
+|:---:|:-------------------------------------------------------------------------------------------------------------:|
+| ![List](https://raw.githubusercontent.com/qq1023308356/drag_anim/main/doc/images/123.gif) | ![Sliver](https://raw.githubusercontent.com/qq1023308356/drag_anim/main/doc/images/sliver.gif |
+
+
 ![Staired example][aligned_example]
 
 ```dart
@@ -241,9 +247,3 @@ Drag Anim is [MIT-licensed](https://github.com/Mindinventory/flutter_draggable_g
 
 # Let us know!
 We’d be really happy if you send us links to your projects where you use our component. Just send an email to 1023308356@qq.com And do let us know if you have any questions or suggestion regarding our work.
-
-
-<!-- Links -->
-[aligned_example]: https://raw.githubusercontent.com/qq1023308356/drag_anim/main/doc/images/sliver.gif
-<!-- Links -->
-[aligned_example]: https://raw.githubusercontent.com/qq1023308356/drag_anim/main/doc/images/123.gif
