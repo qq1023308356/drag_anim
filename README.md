@@ -2,7 +2,8 @@
 #### **Precautions**
 - Support drag-and-drop function with components
 - When sliding the component, you need to pass the scrollController and scrollDirection, otherwise it will not be able to automatically scroll to the edge
-- Theoretically supports all widgets, has been tested flutter_staggered_grid_view, listView, GridView
+- Theoretically supports all widgets, has been tested flutter_staggered_grid_view, listView, GridView, Sliver Series
+- Multiple drags and drops are supported, such as SliverList + SliverGrid, for example in double_sliver
 
 
 ```yaml
