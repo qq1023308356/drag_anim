@@ -13,8 +13,8 @@ dependencies:
 ```
 
 
-| List Demo |                                                   Sliver Demo                                                   |
-|:---:|:-------------------------------------------------------------------------------------------------------------:|
+| List Demo | Sliver Demo |
+|:---:|:---:|
 | ![List](https://raw.githubusercontent.com/qq1023308356/drag_anim/main/doc/images/123.gif) | ![Sliver](https://raw.githubusercontent.com/qq1023308356/drag_anim/main/doc/images/sliver.gif |
 
 
