@@ -245,4 +245,5 @@ We’d be really happy if you send us links to your projects where you use our c
 
 <!-- Links -->
 [aligned_example]: https://raw.githubusercontent.com/qq1023308356/drag_anim/main/doc/images/sliver.gif
+<!-- Links -->
 [aligned_example]: https://raw.githubusercontent.com/qq1023308356/drag_anim/main/doc/images/123.gif
