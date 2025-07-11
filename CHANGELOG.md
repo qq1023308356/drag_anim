@@ -1,3 +1,7 @@
+## 1.1.6
+
+- Add multiple dragging and dropping，SliverGrid + SliverList
+
 ## 1.1.5
 
 - 优化窗口问题

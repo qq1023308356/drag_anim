@@ -11,7 +11,7 @@ typedef DragItems<T> = Widget Function({required T data, required Widget child, 
 class DragAnim<T extends Object> extends StatefulWidget {
   const DragAnim({
     required this.buildItems,
-    required this.dataList,
+    this.dataList,
     this.isLongPressDraggable = true,
     this.buildFeedback,
     this.axis,
@@ -38,7 +38,7 @@ class DragAnim<T extends Object> extends StatefulWidget {
     Key? key,
   }) : super(key: key);
   final Widget Function(DragItems<T>) buildItems;
-  final List<T> dataList;
+  final List<T>? dataList;
   final Widget Function(T data, Widget child, Size? size)? buildFeedback;
   final bool isLongPressDraggable;
   final Axis? axis;
@@ -142,11 +142,14 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
           if (widget.onWillAcceptWithDetails != null) {
             widget.onWillAcceptWithDetails?.call(details, data, true);
           } else {
-            setState(() {
-              final int index = widget.dataList.indexOf(data);
-              widget.dataList.remove(details.data);
-              widget.dataList.insert(index, details.data);
-            });
+            var dataList = widget.dataList;
+            if (dataList != null) {
+              setState(() {
+                final int index = dataList.indexOf(data);
+                dataList.remove(details.data);
+                dataList.insert(index, details.data);
+              });
+            }
           }
         }
       });
@@ -359,6 +362,7 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
     } else if (!isNext && position.pixels <= position.minScrollExtent) {
       return;
     }
+    endWillAccept();
     _scrollableTimer = Timer.periodic(Duration(milliseconds: widget.edgeScrollSpeedMilliseconds), (Timer timer) {
       if (isNext && position.pixels >= position.maxScrollExtent) {
         endAnimation();
