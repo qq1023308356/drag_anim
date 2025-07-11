@@ -32,7 +32,7 @@ class _DoubleSliverPageState extends State<DoubleSliverPage> {
               list.insert(index, details.data);
             });
           }
-          return true;
+          return list != null;
         },
         buildItems: (dragItems) {
           return CustomScrollView(
