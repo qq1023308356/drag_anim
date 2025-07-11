@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:reorderable_anim/anim.dart';
+import 'package:drag_anim/anim.dart';
 import 'package:flutter/material.dart';
 
 import 'drag_anim_notification.dart';
