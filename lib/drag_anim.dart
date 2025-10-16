@@ -106,9 +106,7 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
             if (!mounted) {
               return;
             }
-            _contextOffsetMap.forEach((key, value) {
-              value.updateOffset();
-            });
+            updateOffset();
           });
         }
         return false;
@@ -117,6 +115,12 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
         return setDraggable(data: data, father: child, key: key);
       }),
     );
+  }
+
+  void updateOffset() {
+    _contextOffsetMap.forEach((key, value) {
+      value.updateOffset();
+    });
   }
 
   @override
