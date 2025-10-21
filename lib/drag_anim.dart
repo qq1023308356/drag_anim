@@ -74,6 +74,7 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
   ScrollableState? _scrollable;
   AnimationStatus status = AnimationStatus.completed;
   bool isDragStart = false;
+  bool isOnWillAccept = false;
   T? dragData;
   final Map<Key, ContextOffset> _contextOffsetMap = {};
 
@@ -86,6 +87,7 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
       setState(() {
         this.isDragStart = isDragStart;
         if (!this.isDragStart) {
+          isOnWillAccept = false;
           dragData = null;
         } else {
           endWillAccept();
@@ -143,6 +145,7 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
       endWillAccept();
       _timer = Timer(const Duration(milliseconds: 200), () {
         if (!DragAnimNotification.isScroll) {
+          isOnWillAccept = true;
           if (widget.onWillAcceptWithDetails != null) {
             widget.onWillAcceptWithDetails?.call(details, data, true);
           } else {
@@ -174,7 +177,7 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
     final Widget keyWidget = child;
     return DragAnimWidget(
       contextOffset: () => _contextOffsetMap[key],
-      isExecuteAnimation: () => isDragStart,
+      isExecuteAnimation: () => isDragStart && isOnWillAccept,
       didAndChange: (BuildContext context, bool isDispose) {
         if (isDispose) {
           _contextOffsetMap.remove(key);
@@ -218,6 +221,9 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
         },
       ),
       onAnimationStatus: (AnimationStatus status) {
+        if (status.isCompleted) {
+          isOnWillAccept = false;
+        }
         this.status = status;
       },
     );

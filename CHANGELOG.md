@@ -1,3 +1,7 @@
+## 1.2.0
+
+- Fixed bugs
+
 ## 1.1.8
 
 - Add multiple dragging and dropping，SliverGrid + SliverList
