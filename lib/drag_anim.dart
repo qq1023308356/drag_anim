@@ -351,34 +351,62 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
   bool isEdgeScroll = false;
 
   void _autoScrollIfNecessary(Offset details, Widget father) {
-    // 增加对状态的保护：如果正在执行排序动画，暂时不触发滚动，避免抖动
+    // 1. 状态保护
     if (status != AnimationStatus.completed) {
       return;
     }
 
+    // 2. 获取位置信息
     final ScrollPosition? position = _scrollable?.position ?? widget.scrollController?.position;
-    if (position == null) {}
+    if (position == null) {
+      return;
+    }
 
     final RenderBox scrollRenderBox =
         (_scrollable?.context.findRenderObject() ?? context.findRenderObject()) as RenderBox;
     final Offset scrollOrigin = scrollRenderBox.localToGlobal(Offset.zero);
 
-    // 获取容器在滚动方向上的起始和结束点
     final double scrollStart = _offsetExtent(scrollOrigin, widget.scrollDirection);
     final double scrollEnd = scrollStart + _sizeExtent(scrollRenderBox.size, widget.scrollDirection);
     final double currentOffset = _offsetExtent(details, widget.scrollDirection);
 
     final double containerSize = _sizeExtent(scrollRenderBox.size, widget.scrollDirection);
-    final double edgeThreshold = (containerSize * widget.edgeScroll).clamp(20.0, 100.0);
-    //print('当前偏移 $currentOffset $scrollStart $scrollEnd $edgeThreshold');
+
+    // 3. 计算动态阈值 (保持你之前的逻辑，感应区 50~120)
+    final double edgeThreshold = (containerSize * widget.edgeScroll).clamp(50.0, 120.0);
+
+    // 计算最大步长（即：在全速状态下，单次 Timer 触发应该移动多少像素）
+    // 公式：(容器大小 / 1000毫秒) * 定时器间隔 = 单次间隔应滚动的距离
+    // 含义：如果一直以最大速度滚动，1秒钟刚好滚动一个容器的高度/宽度
+    final double timeFactor = widget.edgeScrollSpeedMilliseconds / 1000.0;
+    final double maxStepPerTick = containerSize * timeFactor;
+
+    // 定义一个计算当前步长的函数
+    double calculateStep(double intensity) {
+      // 强度 intensity (0.0 ~ 1.0)
+      // 简单线性：step = maxStepPerTick * intensity
+      // 建议优化：(maxStepPerTick * intensity).clamp(最小速度, 最大速度)
+      // 这里的 2.0 是为了防止手指刚碰触边缘时速度为0或太慢导致看起来卡顿
+      return (maxStepPerTick * intensity).clamp(2.0, maxStepPerTick);
+    }
+
     if (currentOffset < (scrollStart + edgeThreshold)) {
-      // 靠近起始边缘（左或上）
+      // [上/左 边缘]
+      // intensity 越接近 1.0，表示越靠近边缘，速度越快
       double intensity = (scrollStart + edgeThreshold - currentOffset) / edgeThreshold;
-      animateTo(edgeThreshold * intensity, isNext: false);
+
+      // 使用动态计算的 step
+      double step = calculateStep(intensity);
+
+      animateTo(step, isNext: false);
     } else if (currentOffset > (scrollEnd - edgeThreshold)) {
-      // 靠近结束边缘（右或下）
+      // [下/右 边缘]
       double intensity = (currentOffset - (scrollEnd - edgeThreshold)) / edgeThreshold;
-      animateTo(edgeThreshold * intensity, isNext: true);
+
+      // 使用动态计算的 step
+      double step = calculateStep(intensity);
+
+      animateTo(step, isNext: true);
     } else {
       endAnimation();
     }
