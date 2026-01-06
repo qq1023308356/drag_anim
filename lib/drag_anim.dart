@@ -139,11 +139,6 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
     }
   }
 
-  //判断_timer是否在执行
-  bool get isTimerRunning {
-    return _timer?.isActive ?? false;
-  }
-
   bool setWillAccept(DragTargetDetails<T> details, T data) {
     if (details.data == data) return false;
     if (widget.maxSimultaneousDrags == 1 && details.data != dragData) return false;
@@ -151,6 +146,7 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
     // 如果正在执行滚动，逻辑上应该允许在滚动间隙进行排序判定
     // 调整判断逻辑：只要不是处于剧烈滚动中，都允许尝试
     if (status == AnimationStatus.completed) {
+      isEdgeScroll = false;
       endWillAccept();
       _timer = Timer(const Duration(milliseconds: 100), () {
         // 缩短排序延迟，增加响应速度
@@ -208,7 +204,7 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
             : (DragTargetDetails<T> details) => widget.onAcceptWithDetails?.call(details, data),
         onLeave: widget.onLeave == null ? null : (T? moveData) => widget.onLeave?.call(moveData, data),
         onMove: (DragTargetDetails<T> details) {
-          if (isDragStart && !DragAnimNotification.isScroll && !isTimerRunning) {
+          if (isDragStart && !DragAnimNotification.isScroll && isEdgeScroll) {
             setWillAccept(details, data);
           }
           widget.onMove?.call(data, details);
@@ -351,6 +347,9 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
     });
   }
 
+  //是否边缘滚动过
+  bool isEdgeScroll = false;
+
   void _autoScrollIfNecessary(Offset details, Widget father) {
     // 增加对状态的保护：如果正在执行排序动画，暂时不触发滚动，避免抖动
     if (status != AnimationStatus.completed) {
@@ -401,6 +400,7 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
         endAnimation();
       } else {
         endWillAccept();
+        isEdgeScroll = true;
         position.animateTo(
           position.pixels + (isNext ? mediaQuery : -mediaQuery),
           duration: Duration(milliseconds: widget.edgeScrollSpeedMilliseconds),
