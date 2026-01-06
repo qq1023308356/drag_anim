@@ -28,7 +28,7 @@ class DragAnim<T extends Object> extends StatefulWidget {
     this.onDragCompleted,
     this.scrollController,
     this.draggingWidgetOpacity = 0.5,
-    this.edgeScroll = 0.1,
+    this.edgeScroll = 0.06,
     this.edgeScrollSpeedMilliseconds = 100,
     this.isEdgeScroll = true,
     this.isDrag = true,
@@ -139,26 +139,33 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
     }
   }
 
+  //判断_timer是否在执行
+  bool get isTimerRunning {
+    return _timer?.isActive ?? false;
+  }
+
   bool setWillAccept(DragTargetDetails<T> details, T data) {
-    if (details.data == data || (widget.maxSimultaneousDrags == 1 && details.data != dragData)) {
-      return false;
-    }
+    if (details.data == data) return false;
+    if (widget.maxSimultaneousDrags == 1 && details.data != dragData) return false;
+
+    // 如果正在执行滚动，逻辑上应该允许在滚动间隙进行排序判定
+    // 调整判断逻辑：只要不是处于剧烈滚动中，都允许尝试
     if (status == AnimationStatus.completed) {
       endWillAccept();
-      _timer = Timer(const Duration(milliseconds: 200), () {
-        if (!DragAnimNotification.isScroll) {
-          isOnWillAccept = true;
-          if (widget.onWillAcceptWithDetails != null) {
-            widget.onWillAcceptWithDetails?.call(details, data, true);
-          } else {
-            var dataList = widget.dataList;
-            if (dataList != null) {
-              setState(() {
-                final int index = dataList.indexOf(data);
-                dataList.remove(details.data);
-                dataList.insert(index, details.data);
-              });
-            }
+      _timer = Timer(const Duration(milliseconds: 100), () {
+        // 缩短排序延迟，增加响应速度
+        if (!mounted || DragAnimNotification.isScroll) return;
+        isOnWillAccept = true;
+        if (widget.onWillAcceptWithDetails != null) {
+          widget.onWillAcceptWithDetails?.call(details, data, true);
+        } else {
+          var dataList = widget.dataList;
+          if (dataList != null) {
+            setState(() {
+              final int index = dataList.indexOf(data);
+              dataList.remove(details.data);
+              dataList.insert(index, details.data);
+            });
           }
         }
       });
@@ -200,7 +207,12 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
             ? null
             : (DragTargetDetails<T> details) => widget.onAcceptWithDetails?.call(details, data),
         onLeave: widget.onLeave == null ? null : (T? moveData) => widget.onLeave?.call(moveData, data),
-        onMove: widget.onMove == null ? null : (DragTargetDetails<T> details) => widget.onMove?.call(data, details),
+        onMove: (DragTargetDetails<T> details) {
+          if (isDragStart && !DragAnimNotification.isScroll && !isTimerRunning) {
+            setWillAccept(details, data);
+          }
+          widget.onMove?.call(data, details);
+        },
         hitTestBehavior: widget.hitTestBehavior,
         builder: (BuildContext context, List<T?> candidateData, List<dynamic> rejectedData) {
           if (widget.maxSimultaneousDrags == 1 && data != dragData) {
@@ -340,28 +352,34 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
   }
 
   void _autoScrollIfNecessary(Offset details, Widget father) {
+    // 增加对状态的保护：如果正在执行排序动画，暂时不触发滚动，避免抖动
     if (status != AnimationStatus.completed) {
       return;
     }
-    if (_scrollable == null && widget.scrollController == null) {
-      return;
-    }
-    final RenderBox scrollRenderBox;
-    if (_scrollable != null) {
-      scrollRenderBox = _scrollable!.context.findRenderObject()! as RenderBox;
-    } else {
-      scrollRenderBox = context.findRenderObject()! as RenderBox;
-    }
+
+    final ScrollPosition? position = _scrollable?.position ?? widget.scrollController?.position;
+    if (position == null) {}
+
+    final RenderBox scrollRenderBox =
+        (_scrollable?.context.findRenderObject() ?? context.findRenderObject()) as RenderBox;
     final Offset scrollOrigin = scrollRenderBox.localToGlobal(Offset.zero);
+
+    // 获取容器在滚动方向上的起始和结束点
     final double scrollStart = _offsetExtent(scrollOrigin, widget.scrollDirection);
     final double scrollEnd = scrollStart + _sizeExtent(scrollRenderBox.size, widget.scrollDirection);
     final double currentOffset = _offsetExtent(details, widget.scrollDirection);
-    final double mediaQuery = _sizeExtent(MediaQuery.of(context).size, widget.scrollDirection) * widget.edgeScroll;
-    //print('当前位置  ${currentOffset}  ${scrollStart}  ${scrollEnd}  ${scrollOrigin}');
-    if (currentOffset < (scrollStart + mediaQuery)) {
-      animateTo(mediaQuery, isNext: false);
-    } else if (currentOffset > (scrollEnd - mediaQuery)) {
-      animateTo(mediaQuery);
+
+    final double containerSize = _sizeExtent(scrollRenderBox.size, widget.scrollDirection);
+    final double edgeThreshold = (containerSize * widget.edgeScroll).clamp(20.0, 100.0);
+    //print('当前偏移 $currentOffset $scrollStart $scrollEnd $edgeThreshold');
+    if (currentOffset < (scrollStart + edgeThreshold)) {
+      // 靠近起始边缘（左或上）
+      double intensity = (scrollStart + edgeThreshold - currentOffset) / edgeThreshold;
+      animateTo(edgeThreshold * intensity, isNext: false);
+    } else if (currentOffset > (scrollEnd - edgeThreshold)) {
+      // 靠近结束边缘（右或下）
+      double intensity = (currentOffset - (scrollEnd - edgeThreshold)) / edgeThreshold;
+      animateTo(edgeThreshold * intensity, isNext: true);
     } else {
       endAnimation();
     }
