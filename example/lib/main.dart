@@ -1,4 +1,5 @@
 import 'package:drag_anim/drag_anim.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -13,6 +14,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Flutter Demo',
+      scrollBehavior: MaterialScrollBehavior().copyWith(dragDevices: PointerDeviceKind.values.toSet()),
       theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple)),
       home: const MyHomePage(title: 'Flutter Demo Home Page'),
     );
@@ -69,6 +71,7 @@ class _MyHomePageState extends State<MyHomePage> {
         buildItems: (dragItems) {
           return GridView.builder(
             controller: scrollController,
+            physics: BouncingScrollPhysics(),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 6,
               mainAxisSpacing: 10,

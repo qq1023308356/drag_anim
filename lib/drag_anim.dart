@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:drag_anim/anim.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart'; // 引入 Scheduler 以使用 Ticker
 
 import 'drag_anim_notification.dart';
 import 'render_anim_manage.dart';
@@ -29,7 +30,7 @@ class DragAnim<T extends Object> extends StatefulWidget {
     this.scrollController,
     this.draggingWidgetOpacity = 0.5,
     this.edgeScroll = 0.06,
-    this.edgeScrollSpeedMilliseconds = 100,
+    this.scrollSpeed = 1,
     this.isEdgeScroll = true,
     this.isDrag = true,
     this.isNotDragList,
@@ -57,7 +58,9 @@ class DragAnim<T extends Object> extends StatefulWidget {
   final ScrollController? scrollController;
   final double draggingWidgetOpacity;
   final double edgeScroll;
-  final int edgeScrollSpeedMilliseconds;
+
+  // 表示每秒滚动的百分比
+  final double scrollSpeed;
   final bool isDrag;
   final List<T>? isNotDragList;
   final bool isEdgeScroll;
@@ -69,16 +72,68 @@ class DragAnim<T extends Object> extends StatefulWidget {
   State<StatefulWidget> createState() => DragAnimState<T>();
 }
 
-class DragAnimState<T extends Object> extends State<DragAnim<T>> {
+// 优化1: 混入 SingleTickerProviderStateMixin 用于创建 Ticker
+class DragAnimState<T extends Object> extends State<DragAnim<T>> with SingleTickerProviderStateMixin {
   Timer? _timer;
   Timer? scrollEndTimer;
-  Timer? _scrollableTimer;
   ScrollableState? _scrollable;
   AnimationStatus status = AnimationStatus.completed;
   bool isDragStart = false;
   bool isOnWillAccept = false;
   T? dragData;
   final Map<Key, ContextOffset> _contextOffsetMap = {};
+
+  // 优化2: 使用 Ticker 替代 Timer 实现高帧率平滑滚动
+  Ticker? _autoScrollTicker;
+  double _targetVelocity = 0.0; // 目标速度 (像素/秒)
+  Duration _lastTickTime = Duration.zero;
+
+  @override
+  void initState() {
+    super.initState();
+    // 初始化 Ticker，绑定回调
+    _autoScrollTicker = createTicker(_onTick);
+  }
+
+  // 优化3: Ticker 回调，每一帧执行一次
+  void _onTick(Duration elapsed) {
+    if (_targetVelocity == 0.0) return;
+
+    final ScrollPosition? position = _scrollable?.position ?? widget.scrollController?.position;
+    if (position == null) return;
+
+    // 计算上一帧到当前帧的时间差 (秒)
+    // elapsed 是从 Ticker 启动开始计算的总时间
+    final double deltaTime = (elapsed - _lastTickTime).inMicroseconds / 1000000.0;
+    _lastTickTime = elapsed;
+
+    if (deltaTime == 0) return;
+
+    // 计算本帧位移 = 速度 * 时间
+    final double deltaPixels = _targetVelocity * deltaTime;
+    final double targetPixels = position.pixels + deltaPixels;
+
+    // 边界检查与执行滚动
+    if ((_targetVelocity > 0 && position.pixels < position.maxScrollExtent) ||
+        (_targetVelocity < 0 && position.pixels > position.minScrollExtent)) {
+      // 使用 jumpTo 进行瞬时移动，性能远优于 animateTo
+      final double finalPixels = targetPixels.clamp(position.minScrollExtent, position.maxScrollExtent);
+      position.jumpTo(finalPixels);
+      endWillAccept();
+    } else {
+      // 到达边界，停止滚动
+      endAnimation();
+    }
+  }
+
+  //重新触发setWillAccept
+  void reSetWillAccept() {
+    var acceptDetails = this.acceptDetails;
+    var acceptData = this.acceptData;
+    if (acceptDetails != null && acceptData != null) {
+      setWillAccept(acceptDetails, acceptData);
+    }
+  }
 
   void endWillAccept() {
     _timer?.cancel();
@@ -139,18 +194,23 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
     }
   }
 
+  //记录setWillAccept的 details data
+  DragTargetDetails<T>? acceptDetails;
+  T? acceptData;
+
   bool setWillAccept(DragTargetDetails<T> details, T data) {
     if (details.data == data) return false;
     if (widget.maxSimultaneousDrags == 1 && details.data != dragData) return false;
-
     // 如果正在执行滚动，逻辑上应该允许在滚动间隙进行排序判定
-    // 调整判断逻辑：只要不是处于剧烈滚动中，都允许尝试
     if (status == AnimationStatus.completed) {
-      isEdgeScroll = false;
       endWillAccept();
       _timer = Timer(const Duration(milliseconds: 100), () {
         // 缩短排序延迟，增加响应速度
-        if (!mounted || DragAnimNotification.isScroll) return;
+        if (!mounted || DragAnimNotification.isScroll) {
+          return;
+        }
+        acceptDetails = null;
+        acceptData = null;
         isOnWillAccept = true;
         if (widget.onWillAcceptWithDetails != null) {
           widget.onWillAcceptWithDetails?.call(details, data, true);
@@ -194,6 +254,8 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
       key: key,
       child: DragTarget<T>(
         onWillAcceptWithDetails: (DragTargetDetails<T> details) {
+          acceptDetails = details;
+          acceptData = data;
           if (isDragStart && !DragAnimNotification.isScroll) {
             return setWillAccept(details, data);
           }
@@ -203,12 +265,7 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
             ? null
             : (DragTargetDetails<T> details) => widget.onAcceptWithDetails?.call(details, data),
         onLeave: widget.onLeave == null ? null : (T? moveData) => widget.onLeave?.call(moveData, data),
-        onMove: (DragTargetDetails<T> details) {
-          if (isDragStart && !DragAnimNotification.isScroll && isEdgeScroll) {
-            setWillAccept(details, data);
-          }
-          widget.onMove?.call(data, details);
-        },
+        onMove: widget.onMove == null ? null : (DragTargetDetails<T> details) => widget.onMove?.call(data, details),
         hitTestBehavior: widget.hitTestBehavior,
         builder: (BuildContext context, List<T?> candidateData, List<dynamic> rejectedData) {
           if (widget.maxSimultaneousDrags == 1 && data != dragData) {
@@ -347,12 +404,10 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
     });
   }
 
-  //是否边缘滚动过
-  bool isEdgeScroll = false;
-
   void _autoScrollIfNecessary(Offset details, Widget father) {
     // 1. 状态保护
     if (status != AnimationStatus.completed) {
+      endAnimation();
       return;
     }
 
@@ -372,74 +427,53 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
 
     final double containerSize = _sizeExtent(scrollRenderBox.size, widget.scrollDirection);
 
-    // 3. 计算动态阈值 (保持你之前的逻辑，感应区 50~120)
+    // 3. 计算动态阈值
     final double edgeThreshold = (containerSize * widget.edgeScroll).clamp(50.0, 120.0);
 
-    // 计算最大步长（即：在全速状态下，单次 Timer 触发应该移动多少像素）
-    // 公式：(容器大小 / 1000毫秒) * 定时器间隔 = 单次间隔应滚动的距离
-    // 含义：如果一直以最大速度滚动，1秒钟刚好滚动一个容器的高度/宽度
-    final double timeFactor = widget.edgeScrollSpeedMilliseconds / 1000.0;
-    final double maxStepPerTick = containerSize * timeFactor;
+    // 计算最大速度 (pixels/second)
+    // 容器尺寸 * 每秒滚动百分比 = 每秒最大滚动像素数
+    final double maxVelocity = containerSize * widget.scrollSpeed;
 
-    // 定义一个计算当前步长的函数
-    double calculateStep(double intensity) {
-      // 强度 intensity (0.0 ~ 1.0)
-      // 简单线性：step = maxStepPerTick * intensity
-      // 建议优化：(maxStepPerTick * intensity).clamp(最小速度, 最大速度)
-      // 这里的 2.0 是为了防止手指刚碰触边缘时速度为0或太慢导致看起来卡顿
-      return (maxStepPerTick * intensity).clamp(2.0, maxStepPerTick);
+    // 速度计算函数：线性插值 + 最小值保护
+    double calculateVelocity(double intensity) {
+      // 最小值设为最大速度的10%或者100逻辑像素，防止过慢
+      final double minVelocity = (maxVelocity * 0.1).clamp(100.0, maxVelocity);
+      return (maxVelocity * intensity).clamp(minVelocity, maxVelocity);
     }
 
     if (currentOffset < (scrollStart + edgeThreshold)) {
       // [上/左 边缘]
-      // intensity 越接近 1.0，表示越靠近边缘，速度越快
       double intensity = (scrollStart + edgeThreshold - currentOffset) / edgeThreshold;
-
-      // 使用动态计算的 step
-      double step = calculateStep(intensity);
-
-      animateTo(step, isNext: false);
+      // 触发滚动：负速度
+      _startTickerScroll(-calculateVelocity(intensity));
+      endWillAccept(); // 滚动时暂停排序
     } else if (currentOffset > (scrollEnd - edgeThreshold)) {
       // [下/右 边缘]
       double intensity = (currentOffset - (scrollEnd - edgeThreshold)) / edgeThreshold;
-
-      // 使用动态计算的 step
-      double step = calculateStep(intensity);
-
-      animateTo(step, isNext: true);
+      // 触发滚动：正速度
+      _startTickerScroll(calculateVelocity(intensity));
+      endWillAccept(); // 滚动时暂停排序
     } else {
+      reSetWillAccept();
       endAnimation();
     }
   }
 
-  void animateTo(double mediaQuery, {bool isNext = true}) {
-    final ScrollPosition position = _scrollable?.position ?? widget.scrollController!.position;
-    endAnimation();
-    if (isNext && position.pixels >= position.maxScrollExtent) {
-      return;
-    } else if (!isNext && position.pixels <= position.minScrollExtent) {
-      return;
+  // 优化4: 启动 Ticker 滚动逻辑
+  void _startTickerScroll(double velocity) {
+    _targetVelocity = velocity;
+    if (_autoScrollTicker != null && _autoScrollTicker?.isTicking == false) {
+      _lastTickTime = Duration.zero; // 重置 Tick 时间
+      _autoScrollTicker!.start();
     }
-    endWillAccept();
-    _scrollableTimer = Timer.periodic(Duration(milliseconds: widget.edgeScrollSpeedMilliseconds), (Timer timer) {
-      if (isNext && position.pixels >= position.maxScrollExtent) {
-        endAnimation();
-      } else if (!isNext && position.pixels <= position.minScrollExtent) {
-        endAnimation();
-      } else {
-        endWillAccept();
-        isEdgeScroll = true;
-        position.animateTo(
-          position.pixels + (isNext ? mediaQuery : -mediaQuery),
-          duration: Duration(milliseconds: widget.edgeScrollSpeedMilliseconds),
-          curve: Curves.linear,
-        );
-      }
-    });
   }
 
+  // 优化5: 停止动画 (替代原 animateTo 的 Timer.cancel)
   void endAnimation() {
-    _scrollableTimer?.cancel();
+    _targetVelocity = 0.0;
+    if (_autoScrollTicker != null && _autoScrollTicker?.isTicking == true) {
+      _autoScrollTicker?.stop();
+    }
   }
 
   double _offsetExtent(Offset offset, Axis scrollDirection) {
@@ -463,7 +497,7 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> {
   @override
   void dispose() {
     endWillAccept();
-    endAnimation();
+    _autoScrollTicker?.dispose();
     super.dispose();
     _contextOffsetMap.clear();
   }
