@@ -10,7 +10,6 @@ class DragAnimWidget<T> extends ImplicitlyAnimatedWidget {
       {required this.child,
       required this.contextOffset,
       this.isExecuteAnimation,
-      this.scrollController,
       this.didAndChange,
       Duration? duration,
       this.onAnimationStatus,
@@ -19,7 +18,6 @@ class DragAnimWidget<T> extends ImplicitlyAnimatedWidget {
   final Widget child;
   final AnimationStatusListener? onAnimationStatus;
   static const Duration _animDuration = Duration(milliseconds: 200);
-  final ScrollController? scrollController;
   final Function(BuildContext context, bool isDispose)? didAndChange;
   final ContextOffset? Function()? contextOffset;
   final bool Function()? isExecuteAnimation;

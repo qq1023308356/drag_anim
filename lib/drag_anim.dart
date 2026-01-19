@@ -37,6 +37,7 @@ class DragAnim<T extends Object> extends StatefulWidget {
     this.dragAnchorStrategy = childDragAnchorStrategy,
     this.maxSimultaneousDrags = 1,
     this.longPressDelay,
+    this.scrollPosition,
     Key? key,
   }) : super(key: key);
   final Widget Function(DragItems<T>) buildItems;
@@ -67,6 +68,7 @@ class DragAnim<T extends Object> extends StatefulWidget {
   final DragAnchorStrategy dragAnchorStrategy;
   final int maxSimultaneousDrags;
   final Duration? longPressDelay;
+  final ScrollPosition? scrollPosition;
 
   @override
   State<StatefulWidget> createState() => DragAnimState<T>();
@@ -99,7 +101,8 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> with SingleTick
   void _onTick(Duration elapsed) {
     if (_targetVelocity == 0.0) return;
 
-    final ScrollPosition? position = _scrollable?.position ?? widget.scrollController?.position;
+    final ScrollPosition? position =
+        widget.scrollPosition ?? _scrollable?.position ?? widget.scrollController?.position;
     if (position == null) return;
 
     // 计算上一帧到当前帧的时间差 (秒)
@@ -119,6 +122,7 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> with SingleTick
       // 使用 jumpTo 进行瞬时移动，性能远优于 animateTo
       final double finalPixels = targetPixels.clamp(position.minScrollExtent, position.maxScrollExtent);
       position.jumpTo(finalPixels);
+      startScrollEndTimer();
       endWillAccept();
     } else {
       // 到达边界，停止滚动
@@ -130,7 +134,7 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> with SingleTick
   void reSetWillAccept() {
     var acceptDetails = this.acceptDetails;
     var acceptData = this.acceptData;
-    if (acceptDetails != null && acceptData != null) {
+    if (acceptDetails != null && acceptData != null && _timer?.isActive != true) {
       setWillAccept(acceptDetails, acceptData);
     }
   }
@@ -153,6 +157,17 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> with SingleTick
     }
   }
 
+  void startScrollEndTimer() {
+    scrollEndTimer?.cancel();
+    scrollEndTimer = Timer(const Duration(milliseconds: 150), () {
+      if (!mounted) {
+        return;
+      }
+      updateOffset();
+      scrollEndTimer = null;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return DragAnimNotification(
@@ -160,13 +175,7 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> with SingleTick
         if (notification is ScrollStartNotification) {
           scrollEndTimer?.cancel();
         } else if (notification is ScrollEndNotification) {
-          scrollEndTimer?.cancel();
-          scrollEndTimer = Timer(const Duration(milliseconds: 150), () {
-            if (!mounted) {
-              return;
-            }
-            updateOffset();
-          });
+          startScrollEndTimer();
         }
         return false;
       },
@@ -202,7 +211,7 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> with SingleTick
     if (details.data == data) return false;
     if (widget.maxSimultaneousDrags == 1 && details.data != dragData) return false;
     // 如果正在执行滚动，逻辑上应该允许在滚动间隙进行排序判定
-    if (status == AnimationStatus.completed) {
+    if (status == AnimationStatus.completed && scrollEndTimer == null) {
       endWillAccept();
       _timer = Timer(const Duration(milliseconds: 100), () {
         // 缩短排序延迟，增加响应速度
@@ -250,7 +259,6 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> with SingleTick
           _contextOffsetMap[key] = ContextOffset(context, Offset.zero)..updateOffset();
         }
       },
-      scrollController: widget.scrollController,
       key: key,
       child: DragTarget<T>(
         onWillAcceptWithDetails: (DragTargetDetails<T> details) {
@@ -446,13 +454,11 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> with SingleTick
       double intensity = (scrollStart + edgeThreshold - currentOffset) / edgeThreshold;
       // 触发滚动：负速度
       _startTickerScroll(-calculateVelocity(intensity));
-      endWillAccept(); // 滚动时暂停排序
     } else if (currentOffset > (scrollEnd - edgeThreshold)) {
       // [下/右 边缘]
       double intensity = (currentOffset - (scrollEnd - edgeThreshold)) / edgeThreshold;
       // 触发滚动：正速度
       _startTickerScroll(calculateVelocity(intensity));
-      endWillAccept(); // 滚动时暂停排序
     } else {
       reSetWillAccept();
       endAnimation();
@@ -464,7 +470,7 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> with SingleTick
     _targetVelocity = velocity;
     if (_autoScrollTicker != null && _autoScrollTicker?.isTicking == false) {
       _lastTickTime = Duration.zero; // 重置 Tick 时间
-      _autoScrollTicker!.start();
+      _autoScrollTicker?.start();
     }
   }
 
@@ -498,6 +504,7 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> with SingleTick
   void dispose() {
     endWillAccept();
     _autoScrollTicker?.dispose();
+    scrollEndTimer?.cancel();
     super.dispose();
     _contextOffsetMap.clear();
   }
