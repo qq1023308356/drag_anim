@@ -1,5 +1,5 @@
-import 'package:drag_anim/drag_anim_notification.dart';
-import 'package:drag_anim/render_anim_manage.dart';
+import 'package:drag_anim/widget/drag_anim_notification.dart';
+import 'package:drag_anim/widget/render_anim_manage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
