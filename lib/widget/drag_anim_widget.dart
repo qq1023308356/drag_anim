@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:drag_anim/widget/anim.dart';
+import 'package:drag_anim/widget/drag_draggable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart'; // 引入 Scheduler 以使用 Ticker
 
@@ -75,7 +76,7 @@ class DragAnim<T extends Object> extends StatefulWidget {
 }
 
 // 优化1: 混入 SingleTickerProviderStateMixin 用于创建 Ticker
-class DragAnimState<T extends Object> extends State<DragAnim<T>> with SingleTickerProviderStateMixin {
+class DragAnimState<T extends Object> extends State<DragAnim<T>> with TickerProviderStateMixin {
   Timer? _timer;
   Timer? scrollEndTimer;
   ScrollableState? _scrollable;
@@ -90,11 +91,20 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> with SingleTick
   double _targetVelocity = 0.0; // 目标速度 (像素/秒)
   Duration _lastTickTime = Duration.zero;
 
+  late AnimationController _animationController =
+      AnimationController(vsync: this, duration: const Duration(milliseconds: 200));
+
   @override
   void initState() {
     super.initState();
     // 初始化 Ticker，绑定回调
     _autoScrollTicker = createTicker(_onTick);
+    _animationController.addStatusListener((status) {
+      if (status.isCompleted) {
+        isOnWillAccept = false;
+      }
+      this.status = status;
+    });
   }
 
   // 优化3: Ticker 回调，每一帧执行一次
@@ -251,6 +261,7 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> with SingleTick
     final Widget keyWidget = child;
     return DragAnimWidget(
       contextOffset: () => _contextOffsetMap[key],
+      controller: _animationController,
       isExecuteAnimation: () => isDragStart && isOnWillAccept,
       didAndChange: (BuildContext context, bool isDispose) {
         if (isDispose) {
@@ -295,12 +306,6 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> with SingleTick
           );
         },
       ),
-      onAnimationStatus: (AnimationStatus status) {
-        if (status.isCompleted) {
-          isOnWillAccept = false;
-        }
-        this.status = status;
-      },
     );
   }
 
@@ -312,7 +317,7 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> with SingleTick
     }
     if (widget.isDrag && !isContains(data)) {
       if (widget.isLongPressDraggable) {
-        child = LongPressDraggable<T>(
+        child = DragLongPressDraggable<T>(
           feedback: setFeedback(data, father, key),
           maxSimultaneousDrags: maxSimultaneousDrags,
           axis: widget.axis,
@@ -328,7 +333,7 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> with SingleTick
           dragAnchorStrategy: widget.dragAnchorStrategy,
           onDragUpdate: (DragUpdateDetails details) {
             if (widget.isEdgeScroll) {
-              _autoScrollIfNecessary(details.globalPosition, father);
+              _autoScrollIfNecessary(details.globalPosition);
             }
             widget.onDragUpdate?.call(details, data);
           },
@@ -350,7 +355,7 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> with SingleTick
           child: child,
         );
       } else {
-        child = Draggable<T>(
+        child = DragDraggable<T>(
           feedback: setFeedback(data, father, key),
           maxSimultaneousDrags: maxSimultaneousDrags,
           axis: widget.axis,
@@ -363,7 +368,7 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> with SingleTick
           dragAnchorStrategy: widget.dragAnchorStrategy,
           onDragUpdate: (DragUpdateDetails details) {
             if (widget.isEdgeScroll) {
-              _autoScrollIfNecessary(details.globalPosition, father);
+              _autoScrollIfNecessary(details.globalPosition);
             }
             widget.onDragUpdate?.call(details, data);
           },
@@ -412,7 +417,7 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> with SingleTick
     });
   }
 
-  void _autoScrollIfNecessary(Offset details, Widget father) {
+  void _autoScrollIfNecessary(Offset details) {
     // 1. 状态保护
     if (status != AnimationStatus.completed) {
       endAnimation();
@@ -502,6 +507,7 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> with SingleTick
 
   @override
   void dispose() {
+    _animationController.dispose();
     endWillAccept();
     _autoScrollTicker?.dispose();
     scrollEndTimer?.cancel();

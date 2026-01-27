@@ -5,28 +5,27 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 
-class DragAnimWidget<T> extends ImplicitlyAnimatedWidget {
+class DragAnimWidget<T> extends StatefulWidget {
   const DragAnimWidget(
       {required this.child,
+      required this.controller,
       required this.contextOffset,
       this.isExecuteAnimation,
       this.didAndChange,
       Duration? duration,
-      this.onAnimationStatus,
       Key? key})
-      : super(key: key, duration: duration ?? _animDuration);
+      : super(key: key);
   final Widget child;
-  final AnimationStatusListener? onAnimationStatus;
-  static const Duration _animDuration = Duration(milliseconds: 200);
+  final AnimationController controller;
   final Function(BuildContext context, bool isDispose)? didAndChange;
   final ContextOffset? Function()? contextOffset;
   final bool Function()? isExecuteAnimation;
 
   @override
-  ImplicitlyAnimatedWidgetState<ImplicitlyAnimatedWidget> createState() => _DragAnimWidgetState();
+  State<StatefulWidget> createState() => _DragAnimWidgetState();
 }
 
-class _DragAnimWidgetState extends AnimatedWidgetBaseState<DragAnimWidget> {
+class _DragAnimWidgetState extends State<DragAnimWidget> {
   late RenderAnimManage renderAnimManage = RenderAnimManage(
     widget.contextOffset,
     isExecuteAnimation: widget.isExecuteAnimation,
@@ -35,11 +34,7 @@ class _DragAnimWidgetState extends AnimatedWidgetBaseState<DragAnimWidget> {
   @override
   void initState() {
     super.initState();
-    renderAnimManage.controller = controller;
-    renderAnimManage.animation = animation;
-    if (widget.onAnimationStatus != null) {
-      controller.addStatusListener(widget.onAnimationStatus!);
-    }
+    renderAnimManage.controller = widget.controller;
   }
 
   @override
@@ -62,7 +57,7 @@ class _DragAnimWidgetState extends AnimatedWidgetBaseState<DragAnimWidget> {
   void forEachTween(TweenVisitor<dynamic> visitor) {}
 
   void update() {
-    controller
+    widget.controller
       ..value = 0.0
       ..forward();
   }
@@ -71,7 +66,7 @@ class _DragAnimWidgetState extends AnimatedWidgetBaseState<DragAnimWidget> {
   Widget build(BuildContext context) {
     return _DragAnimRender(
       renderAnimManage,
-      animation.value,
+      widget.controller.value,
       change: () {
         SchedulerBinding.instance.addPostFrameCallback((_) {
           update();
@@ -162,12 +157,16 @@ class _AnimRenderObject extends RenderShiftedBox {
         context.paintChild(child, parentPosition);
         return;
       }
-      if (renderAnimManage.controller.isAnimating && isExecute && tweenOffset != null && lastOffset != null) {
-        final Offset geometry = tweenOffset.evaluate(renderAnimManage.animation);
+      if (renderAnimManage.controller.isAnimating &&
+          isExecute &&
+          tweenOffset != null &&
+          lastOffset != null &&
+          tweenOffset != lastOffset) {
+        final Offset geometry = tweenOffset.evaluate(renderAnimManage.controller);
         context.paintChild(child, geometry);
         renderAnimManage.lastOffset = localOffset;
       } else {
-        if (isExecute && lastOffset != null && (lastOffset.dx != localOffset.dx || lastOffset.dy != localOffset.dy)) {
+        if (isExecute && lastOffset != null && tweenOffset != lastOffset) {
           Offset startOffset = lastOffset - localOffset + parentPosition;
           context.paintChild(child, startOffset);
           setStart(startOffset, parentPosition);

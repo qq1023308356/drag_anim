@@ -6,7 +6,6 @@ class RenderAnimManage {
 
   Tween<Offset>? tweenOffset;
   late AnimationController controller;
-  late Animation<double> animation;
   final ContextOffset? Function()? contextOffset;
   final bool Function()? isExecuteAnimation;
 
