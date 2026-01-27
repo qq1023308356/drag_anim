@@ -261,7 +261,6 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> with TickerProv
     final Widget keyWidget = child;
     return DragAnimWidget(
       contextOffset: () => _contextOffsetMap[key],
-      controller: _animationController,
       isExecuteAnimation: () => isDragStart && isOnWillAccept,
       didAndChange: (BuildContext context, bool isDispose) {
         if (isDispose) {
