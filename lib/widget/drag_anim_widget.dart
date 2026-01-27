@@ -76,7 +76,7 @@ class DragAnim<T extends Object> extends StatefulWidget {
 }
 
 // 优化1: 混入 SingleTickerProviderStateMixin 用于创建 Ticker
-class DragAnimState<T extends Object> extends State<DragAnim<T>> with TickerProviderStateMixin {
+class DragAnimState<T extends Object> extends State<DragAnim<T>> with SingleTickerProviderStateMixin {
   Timer? _timer;
   Timer? scrollEndTimer;
   ScrollableState? _scrollable;
@@ -91,20 +91,11 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> with TickerProv
   double _targetVelocity = 0.0; // 目标速度 (像素/秒)
   Duration _lastTickTime = Duration.zero;
 
-  late AnimationController _animationController =
-      AnimationController(vsync: this, duration: const Duration(milliseconds: 200));
-
   @override
   void initState() {
     super.initState();
     // 初始化 Ticker，绑定回调
     _autoScrollTicker = createTicker(_onTick);
-    _animationController.addStatusListener((status) {
-      if (status.isCompleted) {
-        isOnWillAccept = false;
-      }
-      this.status = status;
-    });
   }
 
   // 优化3: Ticker 回调，每一帧执行一次
@@ -270,6 +261,12 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> with TickerProv
         }
       },
       key: key,
+      onAnimationStatus: (AnimationStatus status) {
+        if (status.isCompleted) {
+          isOnWillAccept = false;
+        }
+        this.status = status;
+      },
       child: DragTarget<T>(
         onWillAcceptWithDetails: (DragTargetDetails<T> details) {
           acceptDetails = details;
@@ -506,7 +503,6 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> with TickerProv
 
   @override
   void dispose() {
-    _animationController.dispose();
     endWillAccept();
     _autoScrollTicker?.dispose();
     scrollEndTimer?.cancel();
