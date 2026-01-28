@@ -38,7 +38,6 @@ class DragAnim<T extends Object> extends StatefulWidget {
     this.dragAnchorStrategy = childDragAnchorStrategy,
     this.maxSimultaneousDrags = 1,
     this.longPressDelay,
-    this.scrollPosition,
     Key? key,
   }) : super(key: key);
   final Widget Function(DragItems<T>) buildItems;
@@ -69,7 +68,6 @@ class DragAnim<T extends Object> extends StatefulWidget {
   final DragAnchorStrategy dragAnchorStrategy;
   final int maxSimultaneousDrags;
   final Duration? longPressDelay;
-  final ScrollPosition? scrollPosition;
 
   @override
   State<StatefulWidget> createState() => DragAnimState<T>();
@@ -79,7 +77,7 @@ class DragAnim<T extends Object> extends StatefulWidget {
 class DragAnimState<T extends Object> extends State<DragAnim<T>> with TickerProviderStateMixin {
   Timer? _timer;
   Timer? scrollEndTimer;
-  ScrollableState? _scrollable;
+  ScrollController? primaryScrollController;
   AnimationStatus status = AnimationStatus.completed;
   bool isDragStart = false;
   bool isOnWillAccept = false;
@@ -110,11 +108,10 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> with TickerProv
   // 优化3: Ticker 回调，每一帧执行一次
   void _onTick(Duration elapsed) {
     if (_targetVelocity == 0.0) return;
+    ScrollController? scrollController = primaryScrollController ?? widget.scrollController;
 
-    final ScrollPosition? position =
-        widget.scrollPosition ?? _scrollable?.position ?? widget.scrollController?.position;
-    if (position == null) return;
-
+    if (scrollController == null || !scrollController.hasClients) return;
+    final ScrollPosition position = scrollController.position;
     // 计算上一帧到当前帧的时间差 (秒)
     // elapsed 是从 Ticker 启动开始计算的总时间
     final double deltaTime = (elapsed - _lastTickTime).inMicroseconds / 1000000.0;
@@ -210,7 +207,7 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> with TickerProv
     super.didChangeDependencies();
     if (widget.scrollController == null) {
       try {
-        _scrollable = Scrollable.of(context);
+        primaryScrollController = PrimaryScrollController.maybeOf(context);
       } catch (e, s) {
         print('找不到控制器，需要添加 scrollController，$e \n $s');
       }
@@ -435,14 +432,7 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> with TickerProv
       return;
     }
 
-    // 2. 获取位置信息
-    final ScrollPosition? position = _scrollable?.position ?? widget.scrollController?.position;
-    if (position == null) {
-      return;
-    }
-
-    final RenderBox scrollRenderBox =
-        (_scrollable?.context.findRenderObject() ?? context.findRenderObject()) as RenderBox;
+    final RenderBox scrollRenderBox = (context.findRenderObject()) as RenderBox;
     final Offset scrollOrigin = scrollRenderBox.localToGlobal(Offset.zero);
 
     final double scrollStart = _offsetExtent(scrollOrigin, widget.scrollDirection);
