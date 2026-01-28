@@ -6,7 +6,7 @@ class DragAnimNotification extends StatefulWidget {
   const DragAnimNotification({required this.child, Key? key, this.onNotification}) : super(key: key);
   final Widget child;
   static bool isScroll = false;
-  final Function(ScrollNotification notification)? onNotification;
+  final Function(Notification notification)? onNotification;
 
   @override
   State<StatefulWidget> createState() => DragAnimNotificationState();
@@ -24,8 +24,8 @@ class DragAnimNotificationState extends State<DragAnimNotification> {
 
   @override
   Widget build(BuildContext context) {
-    return NotificationListener<ScrollNotification>(
-      onNotification: (ScrollNotification notification) {
+    return NotificationListener<Notification>(
+      onNotification: (Notification notification) {
         widget.onNotification?.call(notification);
         if (notification is ScrollStartNotification) {
           _timer?.cancel();

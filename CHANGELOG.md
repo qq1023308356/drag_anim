@@ -1,3 +1,7 @@
+## 1.3.1
+
+- Fixed bugs Optimized animation performance
+
 ## 1.2.2
 
 - Fixed bugs

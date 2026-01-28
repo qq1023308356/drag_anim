@@ -76,7 +76,7 @@ class DragAnim<T extends Object> extends StatefulWidget {
 }
 
 // 优化1: 混入 SingleTickerProviderStateMixin 用于创建 Ticker
-class DragAnimState<T extends Object> extends State<DragAnim<T>> with SingleTickerProviderStateMixin {
+class DragAnimState<T extends Object> extends State<DragAnim<T>> with TickerProviderStateMixin {
   Timer? _timer;
   Timer? scrollEndTimer;
   ScrollableState? _scrollable;
@@ -91,11 +91,20 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> with SingleTick
   double _targetVelocity = 0.0; // 目标速度 (像素/秒)
   Duration _lastTickTime = Duration.zero;
 
+  late AnimationController _animationController =
+      AnimationController(vsync: this, value: 1, duration: const Duration(milliseconds: 200));
+
   @override
   void initState() {
     super.initState();
     // 初始化 Ticker，绑定回调
     _autoScrollTicker = createTicker(_onTick);
+    _animationController.addStatusListener((status) {
+      if (status.isCompleted) {
+        isOnWillAccept = false;
+      }
+      this.status = status;
+    });
   }
 
   // 优化3: Ticker 回调，每一帧执行一次
@@ -172,8 +181,12 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> with SingleTick
   @override
   Widget build(BuildContext context) {
     return DragAnimNotification(
-      onNotification: (ScrollNotification notification) {
-        if (notification is ScrollStartNotification) {
+      onNotification: (Notification notification) {
+        if (notification is ScrollMetricsNotification && !DragAnimNotification.isScroll) {
+          startScrollEndTimer();
+        } else if (notification is LayoutChangedNotification) {
+          startScrollEndTimer();
+        } else if (notification is ScrollStartNotification) {
           scrollEndTimer?.cancel();
         } else if (notification is ScrollEndNotification) {
           startScrollEndTimer();
@@ -251,22 +264,24 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> with SingleTick
   Widget setDragScope(T data, Widget child, Key key) {
     final Widget keyWidget = child;
     return DragAnimWidget(
+      controller: _animationController,
       contextOffset: () => _contextOffsetMap[key],
       isExecuteAnimation: () => isDragStart && isOnWillAccept,
       didAndChange: (BuildContext context, bool isDispose) {
         if (isDispose) {
-          _contextOffsetMap.remove(key);
+          if (_contextOffsetMap[key]?.context == context) {
+            _contextOffsetMap.remove(key);
+          }
         } else {
-          _contextOffsetMap[key] = ContextOffset(context, Offset.zero)..updateOffset();
+          if (_contextOffsetMap.containsKey(key)) {
+            _contextOffsetMap[key]?.context = context;
+            _contextOffsetMap[key]?.updateOffset();
+          } else {
+            _contextOffsetMap[key] = ContextOffset(context, Offset.zero)..updateOffset();
+          }
         }
       },
       key: key,
-      onAnimationStatus: (AnimationStatus status) {
-        if (status.isCompleted) {
-          isOnWillAccept = false;
-        }
-        this.status = status;
-      },
       child: DragTarget<T>(
         onWillAcceptWithDetails: (DragTargetDetails<T> details) {
           acceptDetails = details;
@@ -503,6 +518,7 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> with SingleTick
 
   @override
   void dispose() {
+    _animationController.dispose();
     endWillAccept();
     _autoScrollTicker?.dispose();
     scrollEndTimer?.cancel();
