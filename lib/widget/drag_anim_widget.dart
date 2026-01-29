@@ -181,11 +181,11 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> with TickerProv
       onNotification: (Notification notification) {
         if (notification is ScrollMetricsNotification && !DragAnimNotification.isScroll) {
           startScrollEndTimer();
-        } else if (notification is LayoutChangedNotification) {
-          startScrollEndTimer();
         } else if (notification is ScrollStartNotification) {
           scrollEndTimer?.cancel();
         } else if (notification is ScrollEndNotification) {
+          startScrollEndTimer();
+        } else if (notification.runtimeType.toString() == '$LayoutChangedNotification') {
           startScrollEndTimer();
         }
         return false;
