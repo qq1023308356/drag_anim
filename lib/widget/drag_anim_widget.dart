@@ -39,6 +39,7 @@ class DragAnim<T extends Object> extends StatefulWidget {
     this.maxSimultaneousDrags = 1,
     this.longPressDelay,
     Key? key,
+    this.scrollPosition,
   }) : super(key: key);
   final Widget Function(DragItems<T>) buildItems;
   final List<T>? dataList;
@@ -68,6 +69,7 @@ class DragAnim<T extends Object> extends StatefulWidget {
   final DragAnchorStrategy dragAnchorStrategy;
   final int maxSimultaneousDrags;
   final Duration? longPressDelay;
+  final ScrollPosition? Function()? scrollPosition;
 
   @override
   State<StatefulWidget> createState() => DragAnimState<T>();
@@ -108,10 +110,15 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> with TickerProv
   // 优化3: Ticker 回调，每一帧执行一次
   void _onTick(Duration elapsed) {
     if (_targetVelocity == 0.0) return;
-    ScrollController? scrollController = primaryScrollController ?? widget.scrollController;
 
-    if (scrollController == null || !scrollController.hasClients) return;
-    final ScrollPosition position = scrollController.position;
+    ScrollPosition? position;
+    if (widget.scrollPosition == null) {
+      ScrollController? scrollController = primaryScrollController ?? widget.scrollController;
+      position = scrollController?.positions.firstOrNull;
+    } else {
+      position = widget.scrollPosition?.call();
+    }
+    if (position == null) return;
     // 计算上一帧到当前帧的时间差 (秒)
     // elapsed 是从 Ticker 启动开始计算的总时间
     final double deltaTime = (elapsed - _lastTickTime).inMicroseconds / 1000000.0;
