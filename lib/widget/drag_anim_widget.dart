@@ -158,15 +158,16 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> with TickerProv
           isOnWillAccept = false;
           dragData = null;
         } else {
+          startScrollEndTimer(milliseconds: 80);
           endWillAccept();
         }
       });
     }
   }
 
-  void startScrollEndTimer() {
+  void startScrollEndTimer({int milliseconds = 150}) {
     scrollEndTimer?.cancel();
-    scrollEndTimer = Timer(const Duration(milliseconds: 150), () {
+    scrollEndTimer = Timer(Duration(milliseconds: milliseconds), () {
       if (!mounted) {
         return;
       }
@@ -179,14 +180,16 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> with TickerProv
   Widget build(BuildContext context) {
     return DragAnimNotification(
       onNotification: (Notification notification) {
-        if (notification is ScrollMetricsNotification && !DragAnimNotification.isScroll) {
-          startScrollEndTimer();
-        } else if (notification is ScrollStartNotification) {
-          scrollEndTimer?.cancel();
-        } else if (notification is ScrollEndNotification) {
-          startScrollEndTimer();
-        } else if (notification.runtimeType.toString() == '$LayoutChangedNotification') {
-          startScrollEndTimer();
+        if (isDragStart) {
+          if (notification is ScrollMetricsNotification && !DragAnimNotification.isScroll) {
+            startScrollEndTimer();
+          } else if (notification is ScrollStartNotification) {
+            scrollEndTimer?.cancel();
+          } else if (notification is ScrollEndNotification) {
+            startScrollEndTimer();
+          } else if (notification.runtimeType.toString() == '$LayoutChangedNotification') {
+            startScrollEndTimer();
+          }
         }
         return false;
       },
