@@ -27,10 +27,7 @@ class DragAnimNotificationState extends State<DragAnimNotification> {
     return NotificationListener<Notification>(
       onNotification: (Notification notification) {
         widget.onNotification?.call(notification);
-        if (notification is ScrollStartNotification) {
-          _timer?.cancel();
-          DragAnimNotification.isScroll = true;
-        } else if (notification is ScrollUpdateNotification) {
+        if (notification is ScrollUpdateNotification) {
           _timer?.cancel();
           DragAnimNotification.isScroll = true;
         } else if (notification is ScrollEndNotification) {

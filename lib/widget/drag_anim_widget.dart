@@ -441,8 +441,10 @@ class DragAnimState<T extends Object> extends State<DragAnim<T>> with TickerProv
       endAnimation();
       return;
     }
-
-    final RenderBox scrollRenderBox = (context.findRenderObject()) as RenderBox;
+    final RenderObject? scrollRenderBox = context.findRenderObject();
+    if (scrollRenderBox is! RenderBox) {
+      return;
+    }
     final Offset scrollOrigin = scrollRenderBox.localToGlobal(Offset.zero);
 
     final double scrollStart = _offsetExtent(scrollOrigin, widget.scrollDirection);
